@@ -2,3 +2,4 @@
 *.pyc
 *_C.d
 CVS
+__init__.py
