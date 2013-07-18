@@ -1,0 +1,25 @@
+[CRAB]
+
+jobtype = cmssw
+scheduler = remoteGlidein
+use_server = 0
+
+[CMSSW]
+
+datasetpath=/EPOS_GEN-SIM_batch1/vzhukova-EPOS_RECO_batch3-b7d33bba7673cdb1ee6f4983c0800c79/USER
+dbs_url = http://cmsdbsprod.cern.ch/cms_dbs_ph_analysis_01/servlet/DBSServlet
+pset=rppbtrackanalyzer_epos_cfg.py
+events_per_job = 10000
+total_number_of_events = -1
+output_file = trackAnalysis.root
+
+[USER]
+
+copy_data = 0
+check_user_remote_dir = 0
+publish_data = 0
+eMail = eric.appelt@gmail.com
+return_data = 1
+
+[GRID]
+#se_white_list = T2_US_Vanderbilt

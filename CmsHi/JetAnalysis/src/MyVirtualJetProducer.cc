@@ -196,10 +196,10 @@ MyVirtualJetProducer::MyVirtualJetProducer(const edm::ParameterSet& iConfig)
     int    activeAreaRepeats = iConfig.getParameter<int> ("Active_Area_Repeats");
     // default GhostArea 0.01
     double ghostArea = iConfig.getParameter<double> ("GhostArea");
-    fjActiveArea_ =  ActiveAreaSpecPtr(new fastjet::ActiveAreaSpec(ghostEtaMax,
-								   activeAreaRepeats,
-								   ghostArea));
-    fjRangeDef_ = RangeDefPtr( new fastjet::RangeDefinition(ghostEtaMax) );
+//    fjActiveArea_ =  ActiveAreaSpecPtr(new fastjet::ActiveAreaSpec(ghostEtaMax,
+//								   activeAreaRepeats,
+//							   ghostArea));
+//    fjRangeDef_ = RangeDefPtr( new fastjet::RangeDefinition(ghostEtaMax) );
 
   }
 
@@ -296,6 +296,7 @@ void MyVirtualJetProducer::produce(edm::Event& iEvent,const edm::EventSetup& iSe
   // For Pileup subtraction using offset correction:
   // Subtract pedestal. 
   if ( doPUOffsetCorr_ ) {
+     subtractor_->setDefinition(fjJetDefinition_);
      subtractor_->reset(inputs_,fjInputs_,fjJets_);
      subtractor_->calculatePedestal(fjInputs_); 
      subtractor_->subtractPedestal(fjInputs_);    
@@ -304,10 +305,10 @@ void MyVirtualJetProducer::produce(edm::Event& iEvent,const edm::EventSetup& iSe
 
   // Run algorithm. Will modify fjJets_ and allocate fjClusterSeq_. 
   // This will use fjInputs_
-  runAlgorithm( iEvent, iSetup );
-  if ( doPUOffsetCorr_ ) {
-     subtractor_->setAlgorithm(fjClusterSeq_);
-  }
+//  runAlgorithm( iEvent, iSetup );
+///  if ( doPUOffsetCorr_ ) {
+///     subtractor_->setAlgorithm(fjClusterSeq_);
+///  }
 
   LogDebug("MyVirtualJetProducer") << "Ran algorithm\n";
 
@@ -342,7 +343,8 @@ void MyVirtualJetProducer::inputTowers( )
     inEnd = inputs_.end(), i = inBegin;
   for (; i != inEnd; ++i ) {
     reco::CandidatePtr input = *i;
-    if (isnan(input->pt()))           continue;
+    //if (isnan(input->pt()))           continue;
+    if (std::isnan(input->pt()))           continue;
     if (input->et()    <inputEtMin_)  continue;
     if (input->energy()<inputEMin_)   continue;
     if (isAnomalousTower(input))      continue;

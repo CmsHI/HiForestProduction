@@ -18,7 +18,7 @@
 #include "fastjet/ClusterSequence.hh"
 #include "fastjet/ClusterSequenceArea.hh"
 #include "fastjet/PseudoJet.hh"
-#include "fastjet/ActiveAreaSpec.hh"
+#include "fastjet/GhostedAreaSpec.hh"
 
 #include <vector>
 #include <boost/shared_ptr.hpp>
@@ -73,7 +73,7 @@ public:
   typedef boost::shared_ptr<fastjet::ClusterSequence>        ClusterSequencePtr;
   typedef boost::shared_ptr<fastjet::JetDefinition::Plugin>  PluginPtr;
   typedef boost::shared_ptr<fastjet::JetDefinition>          JetDefPtr;
-  typedef boost::shared_ptr<fastjet::ActiveAreaSpec>         ActiveAreaSpecPtr;
+  typedef boost::shared_ptr<fastjet::GhostedAreaSpec>        GhostedAreaSpecPtr;
   typedef boost::shared_ptr<fastjet::RangeDefinition>        RangeDefPtr;
 
   TNtuple* ntuple;
@@ -177,7 +177,7 @@ protected:
   ClusterSequencePtr              fjClusterSeq_;    // fastjet cluster sequence
   JetDefPtr                       fjJetDefinition_; // fastjet jet definition
   PluginPtr                       fjPlugin_;        // fastjet plugin
-  ActiveAreaSpecPtr               fjActiveArea_;    // fastjet active area definition
+  GhostedAreaSpecPtr               fjActiveArea_;    // fastjet active area definition
   RangeDefPtr                     fjRangeDef_;      // range definition
   std::vector<fastjet::PseudoJet> fjInputs_;        // fastjet inputs
   std::vector<fastjet::PseudoJet> fjJets_;          // fastjet jets

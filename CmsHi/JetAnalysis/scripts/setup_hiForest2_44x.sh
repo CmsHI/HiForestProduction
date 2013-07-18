@@ -11,7 +11,7 @@ cvs co -r HiForest_V02_00 -d       edwenger/Skims                           User
 cvs co -r HiForest_V02_00 -d       edwenger/VertexAnalyzer                  UserCode/edwenger/VertexAnalyzer
 cvs co -r HiForest_V02_00 -d       SpectraAna/JetEtaPhiFilter               UserCode/ASYoon/SpectraAna/JetEtaPhiFilter
 cvs co -r HiForest_V02_00 -d       SpectraAna/TrackSpectraAnalyzer          UserCode/ASYoon/SpectraAna/TrackSpectraAnalyzer
-cvs co -r HiForest_V02_05 -d       MitHig/PixelTrackletAnalyzer             UserCode/MitHig/PixelTrackletAnalyzer
+cvs co -r HiForest_V02_06 -d       MitHig/PixelTrackletAnalyzer             UserCode/MitHig/PixelTrackletAnalyzer
 cvs co -r HiForest_V02_00          UserCode/FerencSiklerVertexing
 
 # pat macros
@@ -79,13 +79,13 @@ cvs co -r hi44X_04                 RecoHI/HiEgammaAlgos
 cvs co -r hi44X_02_01              RecoHI/Configuration
 
 # trigger analyzers
-cvs co -r branch_hi44X HLTrigger/HLTanalyzers
+cvs co -r hi44X_02 HLTrigger/HLTanalyzers
 
 # event analyzer
 cvs co -r HiForest_V02_00 -d       CmsHi/HiHLTAlgos UserCode/CmsHi/HiHLTAlgos
 
 # muon analyzer
-cvs co -r HiForest_V02_00 -d       MuTrig/HLTMuTree UserCode/yenjie/HLTMuTree/
+cvs co -r HiForest_V02_02 -d       MuTrig/HLTMuTree UserCode/yenjie/HLTMuTree/
 
 #echo '54c54
 #< reconstructionHeavyIons_withPF *= HiParticleFlowReco

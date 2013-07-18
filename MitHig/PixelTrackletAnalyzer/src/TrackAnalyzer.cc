@@ -1,4 +1,3 @@
-
 // -*- C++ -*-
 //
 // Package:    TrackAnalyzer
@@ -15,7 +14,7 @@ Prepare the Treack Tree for analysis
 // Original Author:  Yilmaz Yetkin, Yen-Jie Lee
 // Updated: Frank Ma, Matt Nguyen
 //         Created:  Tue Sep 30 15:14:28 CEST 2008
-// $Id: TrackAnalyzer.cc,v 1.42 2012/07/14 13:16:57 yilmaz Exp $
+// $Id: TrackAnalyzer.cc,v 1.55 2013/06/11 20:58:09 yjlee Exp $
 //
 //
 
@@ -75,7 +74,7 @@ Prepare the Treack Tree for analysis
 #include "DataFormats/RecoCandidate/interface/TrackAssociation.h"
 #include "SimTracker/TrackAssociation/interface/TrackAssociatorByHits.h"
 #include "DataFormats/TrackReco/interface/DeDxData.h"
-
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 
 // Heavyion
 #include "DataFormats/HeavyIonEvent/interface/Centrality.h"
@@ -85,6 +84,9 @@ Prepare the Treack Tree for analysis
 #include "DataFormats/ParticleFlowReco/interface/PFBlock.h"
 #include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
 #include "DataFormats/ParticleFlowReco/interface/PFClusterFwd.h"
+
+// Vertex significance
+#include "RecoBTag/SecondaryVertex/interface/SecondaryVertex.h"
 
 // Root include files
 #include "TTree.h"
@@ -103,6 +105,15 @@ using namespace reco;
 #define MAXVTX 100
 #define MAXQUAL 5
 
+        const HepMC::GenParticle * getGpMother(const HepMC::GenParticle *gp) {
+            if (gp != 0) {
+                const HepMC::GenVertex *vtx = gp->production_vertex();
+                if (vtx != 0 && vtx->particles_in_size() > 0) {
+                    return *vtx->particles_in_const_begin();
+                }
+            }
+            return 0;
+        }
 struct TrackEvent{
 
   // event information
@@ -110,6 +121,7 @@ struct TrackEvent{
   int nEv;
   int nLumi;
   int nBX;
+  int N; // multiplicity variable 
 
   // Vertex information
   int nv;
@@ -119,6 +131,32 @@ struct TrackEvent{
   float vxError[MAXVTX];
   float vyError[MAXVTX];
   float vzError[MAXVTX];
+  int nDaugher[MAXVTX];
+
+  // Multiple vtx information
+  int nVtx;
+
+  int nTrkVtx[MAXVTX];
+  float normChi2Vtx[MAXVTX];
+  float sumPtVtx[MAXVTX];
+  //int nTrkVtxHard[MAXVTX];
+  int maxVtx;
+  //int maxVtxHard;
+
+  float xVtx[MAXVTX];
+  float yVtx[MAXVTX];
+  float zVtx[MAXVTX];
+  float xVtxErr[MAXVTX];
+  float yVtxErr[MAXVTX];
+  float zVtxErr[MAXVTX];
+
+  float vtxDist2D[MAXVTX];
+  float vtxDist2DErr[MAXVTX];
+  float vtxDist2DSig[MAXVTX];
+  float vtxDist3D[MAXVTX];
+  float vtxDist3DErr[MAXVTX];
+  float vtxDist3DSig[MAXVTX];
+
 
   // centrality
   int cbin;
@@ -157,11 +195,15 @@ struct TrackEvent{
   float trkAlgo[MAXTRACKS];
   float dedx[MAXTRACKS];
   int trkCharge[MAXTRACKS];
+  unsigned int trkVtxIndex[MAXTRACKS];
 
   float trkExpHit1Eta[MAXTRACKS];
   float trkExpHit2Eta[MAXTRACKS];
   float trkExpHit3Eta[MAXTRACKS];
   float trkStatus[MAXTRACKS];
+  float trkPId[MAXTRACKS];
+  float trkMPId[MAXTRACKS];
+  float trkGMPId[MAXTRACKS];
 
   //matched PF Candidate Info
   int pfType[MAXTRACKS];
@@ -331,24 +373,25 @@ TrackAnalyzer::~TrackAnalyzer()
 TrackAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   // Get tracker geometry
-  cout <<"StartFill"<<endl;
+  //  cout <<"StartFill"<<endl;
   
   edm::ESHandle<TrackerGeometry> tGeo;
   iSetup.get<TrackerDigiGeometryRecord>().get(tGeo);
   geo_ = tGeo.product();
   iSetup.getData(pdt);
 
-  cout <<"Got data"<<endl;
+  //  cout <<"Got data"<<endl;
   pev_.nEv = (int)iEvent.id().event();
   pev_.nRun = (int)iEvent.id().run();
   pev_.nLumi = (int)iEvent.luminosityBlock();
   pev_.nBX = (int)iEvent.bunchCrossing();
+  pev_.N = 0;
 
   pev_.nv = 0;
   pev_.nParticle = 0;
   pev_.nTrk = 0;
 
-  cout <<"Fill Vtx"<<endl;
+  //  cout <<"Fill Vtx"<<endl;
   fillVertices(iEvent);
 
   if(useCentrality_){
@@ -357,13 +400,13 @@ TrackAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     pev_.cbin = centrality_->getBin();
   }
 
-  cout <<"Fill Tracks"<<endl;
+  //cout <<"Fill Tracks"<<endl;
   if (doTrack_) fillTracks(iEvent, iSetup);
-  cout <<"Tracks filled!"<<endl;
+  //  cout <<"Tracks filled!"<<endl;
   if (doSimTrack_) fillSimTracks(iEvent, iSetup);
-  cout <<"SimTracks filled!"<<endl;
+  //  cout <<"SimTracks filled!"<<endl;
   trackTree_->Fill();
-  cout <<"Tree filled!"<<endl;
+  //  cout <<"Tree filled!"<<endl;
   memset(&pev_,0,sizeof pev_);
 
 }
@@ -380,6 +423,7 @@ TrackAnalyzer::fillVertices(const edm::Event& iEvent){
   pev_.vxError[0]=0;
   pev_.vyError[0]=0;
   pev_.vzError[0]=0;
+  pev_.nDaugher[0]=0;
 
   if(doSimVertex_){
     Handle<TrackingVertexCollection> vertices;
@@ -387,7 +431,11 @@ TrackAnalyzer::fillVertices(const edm::Event& iEvent){
     int greatestvtx = -1;
     for (unsigned int i = 0 ; i< vertices->size(); ++i){
       unsigned int daughter = (*vertices)[i].nDaughterTracks();
-      if( daughter >(*vertices)[greatestvtx].nDaughterTracks()&&fabs((*vertices)[i].position().z())<30000) greatestvtx = i;
+      if (greatestvtx==-1) {
+         greatestvtx = i;
+      } else {
+         if( daughter >(*vertices)[greatestvtx].nDaughterTracks()&&fabs((*vertices)[i].position().z())<30000) greatestvtx = i;
+      }
     }
 
     if(greatestvtx != -1){
@@ -400,6 +448,7 @@ TrackAnalyzer::fillVertices(const edm::Event& iEvent){
   }
 
   pev_.nv++;
+
   // Fill reconstructed vertices.   
   for(unsigned int iv = 0; iv < vertexSrc_.size(); ++iv){
     const reco::VertexCollection * recoVertices;
@@ -409,13 +458,59 @@ TrackAnalyzer::fillVertices(const edm::Event& iEvent){
     recoVertices = vertexCollection.product();
     unsigned int daughter = 0;
     int nVertex = 0;
-    int greatestvtx = 0;
+    unsigned int greatestvtx = 0;
 
     nVertex = recoVertices->size();
+    pev_.nVtx = nVertex;
     for (unsigned int i = 0 ; i< recoVertices->size(); ++i){
       daughter = (*recoVertices)[i].tracksSize();
       if( daughter > (*recoVertices)[greatestvtx].tracksSize()) greatestvtx = i;
-      //         cout <<"Vertex: "<< (*recoVertices)[i].position().z()<<" "<<daughter<<endl;
+
+      pev_.xVtx[i] = (*recoVertices)[i].position().x();
+      pev_.yVtx[i] = (*recoVertices)[i].position().y();
+      pev_.zVtx[i] = (*recoVertices)[i].position().z();
+      pev_.xVtxErr[i] = (*recoVertices)[i].xError();
+      pev_.yVtxErr[i] = (*recoVertices)[i].yError();
+      pev_.zVtxErr[i] = (*recoVertices)[i].zError();
+      pev_.nTrkVtx[i] = (*recoVertices)[i].tracksSize();
+      pev_.normChi2Vtx[i] = (*recoVertices)[i].normalizedChi2();
+
+    
+      float vtxSumPt=0.;
+      for (reco::Vertex::trackRef_iterator it = (*recoVertices)[i].tracks_begin(); it != (*recoVertices)[i].tracks_end(); it++) {
+	vtxSumPt += (**it).pt();
+
+	Handle<vector<Track> > etracks;
+	iEvent.getByLabel(trackSrc_, etracks);
+
+	for(unsigned itrack=0; itrack<etracks->size(); ++itrack){
+	  reco::TrackRef trackRef=reco::TrackRef(etracks,itrack);
+	  //cout<<" trackRef.key() "<<trackRef.key()<< " it->key() "<<it->key()<<endl;
+	  if(trackRef.key()==it->key()){
+	    pev_.trkVtxIndex[itrack] = i+1;  // note that index starts from 1 
+	    //cout<< " matching track "<<itrack<<endl;
+	  }
+	}
+      }
+
+      pev_.sumPtVtx[i] = vtxSumPt;
+	  
+    }
+
+    pev_.maxVtx = greatestvtx;
+
+    //loop over vertices again to get the significance wrt the leading vertex -Matt
+    for (unsigned int i = 0 ; i< recoVertices->size(); ++i){
+      if(i==greatestvtx) continue;
+      GlobalVector direction = GlobalVector(pev_.xVtx[i]-pev_.xVtx[greatestvtx],pev_.xVtx[i]-pev_.xVtx[greatestvtx],pev_.xVtx[i]-pev_.xVtx[greatestvtx]);
+      Measurement1D vtxDist2D = reco::SecondaryVertex::computeDist2d((*recoVertices)[greatestvtx], (*recoVertices)[i], direction, true);
+      Measurement1D vtxDist3D = reco::SecondaryVertex::computeDist3d((*recoVertices)[greatestvtx], (*recoVertices)[i], direction, true);
+      pev_.vtxDist2D[i]=vtxDist2D.value();
+      pev_.vtxDist2DErr[i]=vtxDist2D.error();
+      pev_.vtxDist2DSig[i]=vtxDist2D.significance();
+      pev_.vtxDist3D[i]=vtxDist3D.value();
+      pev_.vtxDist3DErr[i]=vtxDist3D.error();
+      pev_.vtxDist3DSig[i]=vtxDist3D.significance();
     }
 
     if(recoVertices->size()>0){
@@ -425,7 +520,7 @@ TrackAnalyzer::fillVertices(const edm::Event& iEvent){
       pev_.vxError[pev_.nv] = (*recoVertices)[greatestvtx].xError();
       pev_.vyError[pev_.nv] = (*recoVertices)[greatestvtx].yError();
       pev_.vzError[pev_.nv] = (*recoVertices)[greatestvtx].zError();
-
+      pev_.nDaugher[pev_.nv] = (*recoVertices)[greatestvtx].tracksSize();
     }else{
       pev_.vx[pev_.nv] =  -99;
       pev_.vy[pev_.nv] =  -99;
@@ -433,6 +528,8 @@ TrackAnalyzer::fillVertices(const edm::Event& iEvent){
       pev_.vxError[pev_.nv] =  -99;
       pev_.vyError[pev_.nv] =  -99;
       pev_.vzError[pev_.nv] =  -99;
+      pev_.nDaugher[pev_.nv] = -99;
+      
     }
     pev_.nv++;
     //cout <<pev_.nv<<endl;
@@ -475,6 +572,7 @@ TrackAnalyzer::fillTracks(const edm::Event& iEvent, const edm::EventSetup& iSetu
   }
 
   pev_.nTrk=0;
+  pev_.N=0;
   for(unsigned it=0; it<etracks->size(); ++it){
     const reco::Track & etrk = (*etracks)[it];
     reco::TrackRef trackRef=reco::TrackRef(etracks,it);
@@ -498,7 +596,7 @@ TrackAnalyzer::fillTracks(const edm::Event& iEvent, const edm::EventSetup& iSetu
     int count1dhits=0;
     for (trackingRecHit_iterator ith = etrk.recHitsBegin(); ith != edh; ++ith) {
       const TrackingRecHit * hit = ith->get();
-      DetId detid = hit->geographicalId();
+      //DetId detid = hit->geographicalId();
       if (hit->isValid()) {
 	if (typeid(*hit) == typeid(SiStripRecHit1D)) ++count1dhits;
       }
@@ -540,19 +638,65 @@ TrackAnalyzer::fillTracks(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
     pev_.trkAlgo[pev_.nTrk] = etrk.algo();
 
+    // multiplicity variable
+    if (pev_.trkQual[0][pev_.nTrk]&&
+        (fabs(pev_.trkDz1[pev_.nTrk]/pev_.trkDzError1[pev_.nTrk]) < 3)&&
+        (fabs(pev_.trkDxy1[pev_.nTrk]/pev_.trkDxyError1[pev_.nTrk]) < 3)&&
+        (pev_.trkPtError[pev_.nTrk]/pev_.trkPt[pev_.nTrk]<0.1)&&
+        (fabs(pev_.trkEta[pev_.nTrk]) < 2.4)&&
+        (pev_.trkPt[pev_.nTrk] > 0.4)
+       ) pev_.N++;
 
+    /*
+      // done in vertex loop instead
+    for(unsigned int iv = 0; iv < vertexSrc_.size(); ++iv){
+      const reco::VertexCollection * recoVertices;
+      edm::Handle<reco::VertexCollection> vertexCollection;
+      iEvent.getByLabel(vertexSrc_[iv],vertexCollection);
+      recoVertices = vertexCollection.product();
+      
+      
+      for (unsigned int ivert = 0 ; ivert< recoVertices->size(); ++ivert){
 
-    //
+	for (reco::Vertex::trackRef_iterator tr_it = (*recoVertices)[ivert].tracks_begin(); tr_it != (*recoVertices)[ivert].tracks_end(); tr_it++) {
+	  
+	    cout<<" trackRef.key() "<<trackRef.key()<< " tr_it->key() "<<tr_it->key()<<endl;
+	    if(trackRef.key()==tr_it->key()){
+	      //pev_.trkVtxIndex[itrack] = i+1;  // note that index starts from 1 
+	      pev_.trkVtxIndex[pev_.nTrk] = 1;  // note that index starts from 1 
+	      cout<< " matching track "<<pev_.nTrk<<endl;
+	    }
+	  }
+      }
+    }
+    */
+
     if (doSimTrack_) {
       pev_.trkFake[pev_.nTrk]=0;
       pev_.trkStatus[pev_.nTrk]=-999;
+      pev_.trkPId[pev_.nTrk]=-999;
+      pev_.trkMPId[pev_.nTrk]=-999;
+      pev_.trkGMPId[pev_.nTrk]=-999;
 
       reco::RecoToSimCollection::const_iterator matchedSim = recSimColl.find(edm::RefToBase<reco::Track>(trackRef));
 
       if(matchedSim == recSimColl.end()){
 	 pev_.trkFake[pev_.nTrk]=1;
       }else{
-	 //  pev_.trkStatus[pev_.nTrk]=matchedSim->status();
+         const TrackingParticle* tparticle = matchedSim->val[0].first.get();
+	 pev_.trkStatus[pev_.nTrk]=tparticle->status();
+	 pev_.trkPId[pev_.nTrk]=tparticle->pdgId();
+         if (tparticle->parentVertex().isNonnull() && !tparticle->parentVertex()->sourceTracks().empty()) {
+	    pev_.trkMPId[pev_.nTrk]=tparticle->parentVertex()->sourceTracks()[0]->pdgId();
+	 } else {
+	    pev_.trkMPId[pev_.nTrk]=-999;
+         }
+         if (!tparticle->genParticle().empty()) {
+            const HepMC::GenParticle * genMom = getGpMother(tparticle->genParticle()[0].get());
+	    if (genMom) {
+                       pev_.trkGMPId[pev_.nTrk] = genMom->pdg_id();
+	    }
+	 }   	    
       }
     }
 
@@ -905,12 +1049,40 @@ TrackAnalyzer::beginJob()
   trackTree_->Branch("nLumi",&pev_.nLumi,"nLumi/I");
   trackTree_->Branch("nBX",&pev_.nBX,"nBX/I");
   trackTree_->Branch("nRun",&pev_.nRun,"nRun/I");
+  trackTree_->Branch("N",&pev_.N,"N/I");
 
   // vertex
   trackTree_->Branch("nv",&pev_.nv,"nv/I");
   trackTree_->Branch("vx",pev_.vx,"vx[nv]/F");
   trackTree_->Branch("vy",pev_.vy,"vy[nv]/F");
   trackTree_->Branch("vz",pev_.vz,"vz[nv]/F");
+  trackTree_->Branch("vxErr",pev_.vxError,"vxErr[nv]/F"); 
+  trackTree_->Branch("vyErr",pev_.vyError,"vyErr[nv]/F"); 
+  trackTree_->Branch("vzErr",pev_.vzError,"vzErr[nv]/F");
+  trackTree_->Branch("nDaugher",pev_.nDaugher,"nDaugher[nv]/I");
+
+  trackTree_->Branch("nVtx",&pev_.nVtx,"nVtx/I");
+  trackTree_->Branch("maxVtx",&pev_.maxVtx,"maxVtx/I");
+  //  trackTree_->Branch("maxVtxHard",&pev_.maxVtxHard,"maxVtxHard/I");
+
+  trackTree_->Branch("nTrkVtx",pev_.nTrkVtx,"nTrkVtx[nVtx]/I");
+  trackTree_->Branch("normChi2Vtx",pev_.normChi2Vtx,"normChi2Vtx[nVtx]/F");
+  trackTree_->Branch("sumPtVtx",pev_.sumPtVtx,"sumPtVtx[nVtx]/F");
+  //  trackTree_->Branch("nTrkVtxHard",pev_.nTrkVtxHard,"nTrkVtxHard[nVtx]/I");
+
+  trackTree_->Branch("xVtx",pev_.xVtx,"xVtx[nVtx]/F");
+  trackTree_->Branch("yVtx",pev_.yVtx,"yVtx[nVtx]/F");
+  trackTree_->Branch("zVtx",pev_.zVtx,"zVtx[nVtx]/F");
+  trackTree_->Branch("xVtxErr",pev_.xVtxErr,"xVtxErr[nVtx]/F");
+  trackTree_->Branch("yVtxErr",pev_.yVtxErr,"yVtxErr[nVtx]/F");
+  trackTree_->Branch("zVtxErr",pev_.zVtxErr,"zVtxErr[nVtx]/F");
+
+  trackTree_->Branch("vtxDist2D",pev_.vtxDist2D,"vtxDist2D[nVtx]/F");
+  trackTree_->Branch("vtxDist2DErr",pev_.vtxDist2DErr,"vtxDist2DErr[nVtx]/F");
+  trackTree_->Branch("vtxDist2DSig",pev_.vtxDist2DSig,"vtxDist2DSig[nVtx]/F");
+  trackTree_->Branch("vtxDist2D",pev_.vtxDist3D,"vtxDist3D[nVtx]/F");
+  trackTree_->Branch("vtxDist3DErr",pev_.vtxDist3DErr,"vtxDist3DErr[nVtx]/F");
+  trackTree_->Branch("vtxDist3DSig",pev_.vtxDist3DSig,"vtxDist3DSig[nVtx]/F");
 
   // centrality
   if (useCentrality_) trackTree_->Branch("cbin",&pev_.cbin,"cbin/I");
@@ -924,6 +1096,7 @@ TrackAnalyzer::beginJob()
   trackTree_->Branch("trkEta",&pev_.trkEta,"trkEta[nTrk]/F");
   trackTree_->Branch("trkPhi",&pev_.trkPhi,"trkPhi[nTrk]/F");
   trackTree_->Branch("trkCharge",&pev_.trkCharge,"trkCharge[nTrk]/I");
+  trackTree_->Branch("trkVtxIndex",&pev_.trkVtxIndex,"trkVtxIndex[nTrk]/I");
 
   if (doDeDx_) {
     trackTree_->Branch("dedx",&pev_.dedx,"dedx[nTrk]/F");
@@ -980,6 +1153,9 @@ TrackAnalyzer::beginJob()
   // Sim Tracks
   if (doSimTrack_) {
      trackTree_->Branch("trkStatus",&pev_.trkStatus,"trkStatus[nTrk]/F");
+     trackTree_->Branch("trkPId",&pev_.trkPId,"trkPId[nTrk]/F");
+     trackTree_->Branch("trkMPId",&pev_.trkMPId,"trkMPId[nTrk]/F");
+     trackTree_->Branch("trkGMPId",&pev_.trkGMPId,"trkGMPId[nTrk]/F");
 
      if(fillSimTrack_){
 

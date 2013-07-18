@@ -1,0 +1,1 @@
+hadd trackCorrections_HIN12017v1_HijingCombined.root `ls | grep -v "multi" | sed -e 's/$/\/res\/trackCorrections\*\.root/'`

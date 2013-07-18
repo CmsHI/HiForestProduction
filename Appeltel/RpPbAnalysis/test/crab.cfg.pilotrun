@@ -1,0 +1,25 @@
+[CRAB]
+
+jobtype = cmssw
+scheduler = remoteGlidein
+use_server = 0
+
+[CMSSW]
+
+datasetpath=/PAPhysics/PARun2012-PromptReco-v2/RECO
+pset=rppbtrackanalyzer_pilotRun_cfg.py
+lumi_mask = json_pilot.txt
+lumis_per_job = 20
+total_number_of_lumis = -1
+output_file = trackAnalysis.root
+
+[USER]
+
+copy_data = 0
+check_user_remote_dir = 0
+publish_data = 0
+eMail = eric.appelt@gmail.com
+return_data = 1
+
+[GRID]
+#se_white_list = T2_US_Vanderbilt

@@ -14,7 +14,7 @@
 // Original Author:  Yetkin Yilmaz
 // Modified: Frank Ma, Yen-Jie Lee
 //         Created:  Tue Sep  7 11:38:19 EDT 2010
-// $Id: RecHitTreeProducer.cc,v 1.20 2012/06/06 15:53:41 yjlee Exp $
+// $Id: RecHitTreeProducer.cc,v 1.27 2013/01/22 16:36:27 yilmaz Exp $
 //
 //
 
@@ -56,6 +56,7 @@
 
 #include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
+#include "DataFormats/HcalDigi/interface/HcalDigiCollections.h"
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
 #include "DataFormats/EcalDetId/interface/EcalDetIdCollections.h"
 #include "DataFormats/EgammaReco/interface/BasicClusterFwd.h"
@@ -64,6 +65,10 @@
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 
+#include "CalibFormats/HcalObjects/interface/HcalCoderDb.h"
+#include "CalibFormats/HcalObjects/interface/HcalDbService.h"
+#include "CalibFormats/HcalObjects/interface/HcalDbRecord.h"
+#include "RecoLocalCalo/HcalRecAlgos/interface/HcalCaloFlagLabels.h"
 
 #include "TNtuple.h"
 
@@ -71,9 +76,13 @@ using namespace std;
 
 #define MAXHITS 100000
 
+
 struct MyRecHit{
   int depth[MAXHITS];
   int n;
+
+  int ieta[MAXHITS];
+  int iphi[MAXHITS];
 
   float e[MAXHITS];
   float et[MAXHITS];
@@ -91,12 +100,31 @@ struct MyRecHit{
   float emEtVtx[MAXHITS];
   float hadEtVtx[MAXHITS];
 
+  int saturation[MAXHITS];
+
    float jtpt;
    float jteta;
    float jtphi;
 
 };
 
+struct MyZDCRecHit{  
+  int n;
+  float  e[18];
+  int    zside[18];
+  int    section [18];
+  int    channel[18];
+  int    saturation[18];
+};
+
+struct MyZDCDigi{  
+  int    n;
+  float  chargefC[10][18];
+  int    adc[10][18];
+  int    zside[18];
+  int    section [18];
+  int    channel[18];
+};
 
 struct MyBkg{
    int n;
@@ -157,9 +185,14 @@ class RecHitTreeProducer : public edm::EDAnalyzer {
   MyRecHit hfRecHit;
   MyRecHit ebRecHit;
   MyRecHit eeRecHit;
-   MyRecHit myBC;
-   MyRecHit myTowers;
-   MyBkg bkg;
+  MyRecHit myBC;
+  MyRecHit myTowers;
+  MyRecHit castorRecHit;
+
+  MyZDCRecHit zdcRecHit;
+  MyZDCDigi zdcDigi;
+
+  MyBkg bkg;
 
   TNtuple* nt;
   TTree* hbheTree;
@@ -169,6 +202,9 @@ class RecHitTreeProducer : public edm::EDAnalyzer {
    TTree* bcTree;
    TTree* towerTree;
    TTree* bkgTree;
+  TTree* castorTree;
+  TTree* zdcRecHitTree;
+  TTree* zdcDigiTree;
 
   double cone;
   double hfTowerThreshold_;
@@ -183,6 +219,9 @@ class RecHitTreeProducer : public edm::EDAnalyzer {
   double ebPtMin_;
   double eePtMin_;
   double towerPtMin_;
+
+  int nZdcTs_;
+  bool calZDCDigi_;
   
    edm::Service<TFileService> fs;
    const CentralityBins * cbins_;
@@ -206,6 +245,10 @@ class RecHitTreeProducer : public edm::EDAnalyzer {
    bool doEcal_;
    bool doHcal_;
    bool doHF_;
+  bool doCastor_;
+  bool doZDCRecHit_;
+  bool doZDCDigi_;
+
    bool hasVtx_;
   bool saveBothVtx_;
 
@@ -246,6 +289,10 @@ RecHitTreeProducer::RecHitTreeProducer(const edm::ParameterSet& iConfig) :
   doEcal_ = iConfig.getUntrackedParameter<bool>("doEcal",true);
   doHcal_ = iConfig.getUntrackedParameter<bool>("doHcal",true);
   doHF_ = iConfig.getUntrackedParameter<bool>("doHF",true);
+  doCastor_ = iConfig.getUntrackedParameter<bool>("doCASTOR",true);
+  doZDCRecHit_ = iConfig.getUntrackedParameter<bool>("doZDCRecHit",true);
+  doZDCDigi_ = iConfig.getUntrackedParameter<bool>("doZDCDigi",true);
+
   hasVtx_ = iConfig.getUntrackedParameter<bool>("hasVtx",true);
   saveBothVtx_ = iConfig.getUntrackedParameter<bool>("saveBothVtx",false);
 
@@ -260,8 +307,8 @@ RecHitTreeProducer::RecHitTreeProducer(const edm::ParameterSet& iConfig) :
   ebPtMin_ = iConfig.getUntrackedParameter<double>("EBTreePtMin",0);
   eePtMin_ = iConfig.getUntrackedParameter<double>("EETreePtMin",0.);
   towerPtMin_ = iConfig.getUntrackedParameter<double>("TowerTreePtMin",0.);
-
-
+  nZdcTs_=iConfig.getUntrackedParameter<int>("nZdcTs",10);
+  calZDCDigi_=iConfig.getUntrackedParameter<bool>("calZDCDigi",true);
 }
 
 
@@ -566,6 +613,122 @@ RecHitTreeProducer::analyze(const edm::Event& ev, const edm::EventSetup& iSetup)
       }
    }
 
+   if(doCastor_){
+
+     edm::Handle<CastorRecHitCollection> casrechits;    
+     try{ ev.getByLabel("castorreco",casrechits); }
+     catch(...) { edm::LogWarning(" CASTOR ") << " Cannot get Castor RecHits " << std::endl; }
+
+     int nhits = 0;
+     double energyCastor = 0;
+
+     if(casrechits.failedToGet()!=0 || !casrechits.isValid()) {       
+       edm::LogWarning(" CASTOR ") << " Cannot read CastorRecHitCollection" << std::endl;
+     } else {      
+       for(size_t i1 = 0; i1 < casrechits->size(); ++i1) {	 
+	 const CastorRecHit & rh = (*casrechits)[i1];	 
+	 HcalCastorDetId castorid = rh.id();	 
+	 energyCastor += rh.energy();
+	 if (nhits  < 224) {	   
+	   castorRecHit.e[nhits] = rh.energy();	   
+	   castorRecHit.iphi[nhits] = castorid.sector();	   
+	   castorRecHit.depth[nhits] = castorid.module();	   
+	   castorRecHit.phi[nhits] = getPhi(castorid);
+	   castorRecHit.saturation[nhits] = static_cast<int>( rh.flagField(HcalCaloFlagLabels::ADCSaturationBit) );
+
+       }
+
+       nhits++;
+
+       } // end loop castor rechits
+     }
+     
+     castorRecHit.n = nhits;         
+     castorTree->Fill();
+   }
+
+   if(doZDCRecHit_){
+
+     edm::Handle<ZDCRecHitCollection> zdcrechits;    
+ 
+     try{ ev.getByLabel("zdcreco",zdcrechits); }
+     catch(...) { edm::LogWarning(" ZDC ") << " Cannot get ZDC RecHits " << std::endl; }
+
+     int nhits = 0;
+
+     if (zdcrechits.failedToGet()!=0 || !zdcrechits.isValid()) {       
+       edm::LogWarning(" ZDC ") << " Cannot read ZDCRecHitCollection" << std::endl;
+     } else {      
+       for(size_t i1 = 0; i1 < zdcrechits->size(); ++i1) {	 
+	 const ZDCRecHit & rh = (*zdcrechits)[i1];	 
+	 HcalZDCDetId zdcid = rh.id();	 
+	 if (nhits  < 18) {	   
+	   zdcRecHit.e[nhits] = rh.energy();	   
+	   zdcRecHit.zside[nhits] = zdcid.zside();	   
+	   zdcRecHit.section[nhits] = zdcid.section();	   
+	   zdcRecHit.channel[nhits] = zdcid.channel();
+	   zdcRecHit.saturation[nhits] = static_cast<int>( rh.flagField(HcalCaloFlagLabels::ADCSaturationBit) );
+         }
+
+         nhits++;
+
+       } // end loop zdc rechits
+     }
+    
+     zdcRecHit.n = nhits;         
+     zdcRecHitTree->Fill();
+
+   }
+
+   if(doZDCDigi_){
+
+     edm::Handle<ZDCDigiCollection> zdcdigis; 
+     
+     try{ ev.getByLabel("hcalDigis",zdcdigis); }
+     catch(...) { edm::LogWarning(" ZDC ") << " Cannot get ZDC Digis " << std::endl; }
+
+     int nhits = 0;	
+ 
+     if (zdcdigis.failedToGet()!=0 || !zdcdigis.isValid()) {       
+       edm::LogWarning(" ZDC ") << " Cannot read ZDCDigiCollection" << std::endl;
+     } else {  
+   
+       edm::ESHandle<HcalDbService> conditions;	
+       iSetup.get<HcalDbRecord>().get(conditions);
+
+       for(size_t i1 = 0; i1 < zdcdigis->size(); ++i1) {	 
+	 CaloSamples caldigi;
+	 const ZDCDataFrame & rh = (*zdcdigis)[i1];	 
+	 HcalZDCDetId zdcid = rh.id();
+         
+	 if(calZDCDigi_){
+	   const HcalQIEShape* qieshape=conditions->getHcalShape();
+	   const HcalQIECoder* qiecoder=conditions->getHcalCoder(zdcid);
+	   HcalCoderDb coder(*qiecoder,*qieshape);
+           coder.adc2fC(rh,caldigi);
+         }
+
+	 if (nhits  < 18) {	   
+	   int ts = 0;   
+	   zdcDigi.zside[nhits] = zdcid.zside();	   
+	   zdcDigi.section[nhits] = zdcid.section();	   
+	   zdcDigi.channel[nhits] = zdcid.channel();
+
+           for(int j1 = 0; j1 < rh.size(); j1++){
+	     zdcDigi.chargefC[ts][nhits]=calZDCDigi_?caldigi[ts]:rh[ts].nominal_fC();
+	     zdcDigi.adc[ts][nhits]= rh[ts].adc();	  
+             ts++;
+	   }
+         }
+         nhits++;
+       } // end loop zdc rechits
+     }
+    
+     zdcDigi.n = nhits;
+     zdcDigiTree->Fill();
+
+   }
+
    if(!doEbyEonly_){
      towerTree->Fill();
      
@@ -641,13 +804,52 @@ RecHitTreeProducer::beginJob()
   towerTree->Branch("emEt",myTowers.emEt,"emEt[n]/F");
   towerTree->Branch("hadEt",myTowers.hadEt,"hadEt[n]/F");
 
+
+  if(doCastor_){
+    castorTree = fs->make<TTree>("castor",versionTag);
+    castorTree->Branch("n",&castorRecHit.n,"n/I");
+    castorTree->Branch("e",castorRecHit.e,"e[n]/F");
+    castorTree->Branch("iphi",castorRecHit.iphi,"iphi[n]/I");
+    castorTree->Branch("phi",castorRecHit.phi,"phi[n]/F");
+    castorTree->Branch("depth",castorRecHit.depth,"depth[n]/I");
+    castorTree->Branch("saturation",castorRecHit.saturation,"saturation[n]/I");
+  }
+
+  if(doZDCRecHit_){
+    zdcRecHitTree = fs->make<TTree>("zdcrechit",versionTag);
+    zdcRecHitTree->Branch("n",&zdcRecHit.n,"n/I");
+    zdcRecHitTree->Branch("e",zdcRecHit.e,"e[n]/F");
+    zdcRecHitTree->Branch("saturation",zdcRecHit.saturation,"saturation[n]/F");
+    zdcRecHitTree->Branch("zside",zdcRecHit.zside,"zside[n]/I");
+    zdcRecHitTree->Branch("section",zdcRecHit.section,"section[n]/I");
+    zdcRecHitTree->Branch("channel",zdcRecHit.channel,"channel[n]/I");
+  }
+
+  if(doZDCDigi_){
+    TString nZdcTsSt="";
+    nZdcTsSt+=nZdcTs_;
+
+    zdcDigiTree = fs->make<TTree>("zdcdigi",versionTag);
+    zdcDigiTree->Branch("n",&zdcDigi.n,"n/I");
+    zdcDigiTree->Branch("zside",zdcDigi.zside,"zside[n]/I");
+    zdcDigiTree->Branch("section",zdcDigi.section,"section[n]/I");
+    zdcDigiTree->Branch("channel",zdcDigi.channel,"channel[n]/I");
+    
+    for( int i=0; i<nZdcTs_;i++){
+      TString adcTsSt("adcTs"), chargefCTsSt("chargefCTs"); 
+      adcTsSt+=i; chargefCTsSt+=i;
+
+      zdcDigiTree->Branch(adcTsSt,zdcDigi.adc[i],adcTsSt+"[n]/I");
+      zdcDigiTree->Branch(chargefCTsSt,zdcDigi.chargefC[i],chargefCTsSt+"[n]/F");
+    }
+  }
+
   if (saveBothVtx_) {
     towerTree->Branch("etVtx",myTowers.etVtx,"etvtx[n]/F");
     towerTree->Branch("etaVtx",myTowers.etaVtx,"etavtx[n]/F");
     towerTree->Branch("emEtVtx",myTowers.emEtVtx,"emEtVtx[n]/F");
     towerTree->Branch("hadEtVtx",myTowers.hadEtVtx,"hadEtVtx[n]/F");
   }
-
 
   if(doBasicClusters_){
      bcTree = fs->make<TTree>("bc",versionTag);

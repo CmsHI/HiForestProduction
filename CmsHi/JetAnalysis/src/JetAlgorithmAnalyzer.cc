@@ -7,7 +7,7 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
-#include "DataFormats/HeavyIonEvent/interface/Centrality.h"
+#include "DataFormats/HeavyIonEvent/interface/CentralityProvider.h"
 #include "DataFormats/HeavyIonEvent/interface/EvtPlane.h"
 #include "TNtuple.h"
 #include "TH2D.h"
@@ -91,7 +91,6 @@ protected:
    TNtuple* ntRandom0;
    TNtuple* ntRandom1;
 
-  edm::Handle<reco::Centrality> cent;
   edm::Handle<pat::JetCollection> patjets;
 
   std::vector<TH2D*> hTowers;
@@ -114,6 +113,7 @@ protected:
 
    const CaloGeometry *geo;
    edm::Service<TFileService> f;
+  CentralityProvider * centrality_;
 };
 
 
@@ -191,9 +191,12 @@ JetAlgorithmAnalyzer::JetAlgorithmAnalyzer(const edm::ParameterSet& iConfig)
      etaMax_(3),
      iev_(0),
      geo(0),
-     cbins_(0),
+     centrality_(0),
      cone_(1)
 {
+
+  doAreaFastjet_ = false;
+  doRhoFastjet_ = false;
 
    puSubtractorName_  =  iConfig.getParameter<string> ("subtractorName");
    subtractor_ =  boost::shared_ptr<PileUpSubtractor>(PileUpSubtractorFactory::get()->create( puSubtractorName_, iConfig));
@@ -241,6 +244,13 @@ JetAlgorithmAnalyzer::JetAlgorithmAnalyzer(const edm::ParameterSet& iConfig)
   produces<reco::CaloJetCollection>("randomCones");
   produces<std::vector<bool> >("directions");
 
+  if(backToBack_){
+    ntRandom0 = f->make<TNtuple>("ntRandom0","Algorithm Analysis Background","eta:phi:phiRel:et:had:em:pu:mean:rms:bin:hf:sumET:event:dR:matchedJetPt:evtJetPt");
+    ntRandom1 = f->make<TNtuple>("ntRandom1","Algorithm Analysis Background","eta:phi:phiRel:et:had:em:pu:mean:rms:bin:hf:sumET:event:dR:matchedJetPt:evtJetPt");
+  }else{
+    ntRandom = f->make<TNtuple>("ntRandom","Algorithm Analysis Background","eta:phi:phiRel:et:had:em:pu:mean:rms:bin:hf:sumET:event:dR:matchedJetPt:evtJetPt");
+  }
+
   if(doAnalysis_){
      ntTowers = f->make<TNtuple>("ntTowers","Algorithm Analysis Towers","eta:phi:et:step:event");
      ntTowersFromEvtPlane = f->make<TNtuple>("ntTowersFromEvtPlane","Algorithm Analysis Towers","eta:phi:et:step:event");
@@ -248,13 +258,6 @@ JetAlgorithmAnalyzer::JetAlgorithmAnalyzer(const edm::ParameterSet& iConfig)
 
      ntJets = f->make<TNtuple>("ntJets","Algorithm Analysis Jets","eta:phi:et:step:event");
      ntPU = f->make<TNtuple>("ntPU","Algorithm Analysis Background","eta:mean:sigma:step:event");
-     if(backToBack_){
-        ntRandom0 = f->make<TNtuple>("ntRandom0","Algorithm Analysis Background","eta:phi:phiRel:et:had:em:pu:mean:rms:bin:hf:sumET:event:dR:matchedJetPt:evtJetPt");
-        ntRandom1 = f->make<TNtuple>("ntRandom1","Algorithm Analysis Background","eta:phi:phiRel:et:had:em:pu:mean:rms:bin:hf:sumET:event:dR:matchedJetPt:evtJetPt");
-     }else{
-	ntRandom = f->make<TNtuple>("ntRandom","Algorithm Analysis Background","eta:phi:phiRel:et:had:em:pu:mean:rms:bin:hf:sumET:event:dR:matchedJetPt:evtJetPt");
-     }
-
      ntuple = f->make<TNtuple>("nt","debug","ieta:eta:iphi:phi:pt:em:had");
 
      hPTieta = f->make<TH2D>("hPTieta","hPTieta",23,-11.5,11.5,200,0,10);
@@ -315,8 +318,8 @@ void JetAlgorithmAnalyzer::fillNtuple(int output, const  std::vector<fastjet::Ps
    int nj = jets.size();
 
    if(printDebug){
-   cout<<"step : "<<step<<endl;
-   cout<<"Size of input : "<<nj<<endl;
+     //   cout<<"step : "<<step<<endl;
+     //   cout<<"Size of input : "<<nj<<endl;
    }
    for(unsigned int i = 0; i < jets.size(); ++i){
      const fastjet::PseudoJet& jet = jets[i];
@@ -350,7 +353,7 @@ void JetAlgorithmAnalyzer::fillNtuple(int output, const  std::vector<fastjet::Ps
      nt->Fill(jet.eta(),phi,pt,step,iev_);
      h->Fill(jet.eta(),phi,pt);
    }
-   if(printDebug){
+   if(printDebug && 0){
    cout<<"-----------------------------"<<endl;
    cout<<"STEP             = "<<step<<endl;   
    cout<<"Total ET         = "<<totet<<endl;
@@ -414,8 +417,9 @@ void JetAlgorithmAnalyzer::fillBkgNtuple(const PileUpSubtractor* subtractor, int
 void JetAlgorithmAnalyzer::produce(edm::Event& iEvent,const edm::EventSetup& iSetup)
 {
 
-  //  if(doAnalysis_)   subtractor_->setDebug(1);
-  //  else subtractor_->setDebug(0);
+  if(!centrality_) centrality_ = new CentralityProvider(iSetup);
+  centrality_->newEvent(iEvent,iSetup);
+
    phi0_ = 0;
 
    if(!geo){
@@ -425,20 +429,16 @@ void JetAlgorithmAnalyzer::produce(edm::Event& iEvent,const edm::EventSetup& iSe
    }
 
    iEvent.getByLabel(PatJetSrc_,patjets);
-   iEvent.getByLabel(centTag_,cent);
-   if(!cbins_) cbins_ = getCentralityBinsFromDB(iSetup);
 
-   hf_ = cent->EtHFhitSum();
-   sumET_ = cent->EtMidRapiditySum();
-   bin_ = cbins_->getBin(hf_);
+   hf_ = centrality_->centralityValue();
+   sumET_ = centrality_->raw()->Ntracks();
+   bin_ = centrality_->getBin();
    
-   if(centBin_ >= 0 && bin_ != centBin_) return;
-   
-   LogDebug("VirtualJetProducer") << "Entered produce\n";
+   //   cout<<("VirtualJetProducer") << "Entered produce\n";
    //determine signal vertex
    vertex_=reco::Jet::Point(0,0,0);
    if (makeCaloJet(jetTypeE)&&doPVCorrection_) {
-      LogDebug("VirtualJetProducer") << "Adding PV info\n";
+     //     cout<<("VirtualJetProducer") << "Adding PV info\n";
       edm::Handle<reco::VertexCollection> pvCollection;
       iEvent.getByLabel(srcPVs_,pvCollection);
       if (pvCollection->size()>0) vertex_=pvCollection->begin()->position();
@@ -452,7 +452,7 @@ void JetAlgorithmAnalyzer::produce(edm::Event& iEvent,const edm::EventSetup& iSe
    }
 
    // clear data
-   LogDebug("VirtualJetProducer") << "Clear data\n";
+   //   cout<<("VirtualJetProducer") << "Clear data\n";
    fjInputs_.clear();
    fjJets_.clear();
    inputs_.clear();  
@@ -470,14 +470,14 @@ void JetAlgorithmAnalyzer::produce(edm::Event& iEvent,const edm::EventSetup& iSe
    for (size_t i = 0; i < inputsHandle->size(); ++i) {
       inputs_.push_back(inputsHandle->ptrAt(i));
    }
-   LogDebug("VirtualJetProducer") << "Got inputs\n";
+   //   cout<<("VirtualJetProducer") << "Got inputs\n";
   
    // Convert candidates to fastjet::PseudoJets.
    // Also correct to Primary Vertex. Will modify fjInputs_
    // and use inputs_
    fjInputs_.reserve(inputs_.size());
    inputTowers();
-   LogDebug("VirtualJetProducer") << "Inputted towers\n";
+   //   cout<<("VirtualJetProducer") << "Inputted towers\n";
 
    fillTowerNtuple(fjInputs_,0);
    fillBkgNtuple(subtractor_.get(),0);
@@ -486,6 +486,7 @@ void JetAlgorithmAnalyzer::produce(edm::Event& iEvent,const edm::EventSetup& iSe
    // Subtract pedestal. 
 
    if ( doPUOffsetCorr_ ) {
+      subtractor_->setDefinition(fjJetDefinition_);
       subtractor_->reset(inputs_,fjInputs_,fjJets_);
       subtractor_->calculatePedestal(fjInputs_); 
 
@@ -496,7 +497,7 @@ void JetAlgorithmAnalyzer::produce(edm::Event& iEvent,const edm::EventSetup& iSe
       fillTowerNtuple(fjInputs_,2);
       fillBkgNtuple(subtractor_.get(),2);
 
-      LogDebug("VirtualJetProducer") << "Subtracted pedestal\n";
+      //      cout<<("VirtualJetProducer") << "Subtracted pedestal\n";
    }
 
    // Run algorithm. Will modify fjJets_ and allocate fjClusterSeq_. 
@@ -505,13 +506,13 @@ void JetAlgorithmAnalyzer::produce(edm::Event& iEvent,const edm::EventSetup& iSe
 
    fillTowerNtuple(fjInputs_,3);
    fillBkgNtuple(subtractor_.get(),3);
-   fillJetNtuple(fjJets_,3);
+   //   fillJetNtuple(fjJets_,3);
 
-   if ( doPUOffsetCorr_ ) {
-      subtractor_->setAlgorithm(fjClusterSeq_);
-   }
+///   if ( doPUOffsetCorr_ ) {
+///      subtractor_->setAlgorithm(fjClusterSeq_);
+///   }
 
-   LogDebug("VirtualJetProducer") << "Ran algorithm\n";
+//   cout<<("VirtualJetProducer") << "Ran algorithm\n";
 
    // For Pileup subtraction using offset correction:
    // Now we find jets and need to recalculate their energy,
@@ -524,18 +525,18 @@ void JetAlgorithmAnalyzer::produce(edm::Event& iEvent,const edm::EventSetup& iSe
       subtractor_->calculateOrphanInput(orphanInput);
       fillTowerNtuple(orphanInput,4);
       fillBkgNtuple(subtractor_.get(),4);
-      fillJetNtuple(fjJets_,4);
+      //      fillJetNtuple(fjJets_,4);
 
       //only the id's of the orphan input are used, not their energy
       subtractor_->calculatePedestal(orphanInput);
       fillTowerNtuple(orphanInput,5);
       fillBkgNtuple(subtractor_.get(),5);
-      fillJetNtuple(fjJets_,5);
+      //      fillJetNtuple(fjJets_,5);
 
       subtractor_->offsetCorrectJets();
       fillTowerNtuple(orphanInput,6);
       fillBkgNtuple(subtractor_.get(),6);
-      fillJetNtuple(fjJets_,6);
+      //      fillJetNtuple(fjJets_,6);
 
    }
   
@@ -545,9 +546,9 @@ void JetAlgorithmAnalyzer::produce(edm::Event& iEvent,const edm::EventSetup& iSe
    // this will use inputs_
    output( iEvent, iSetup );
    fillBkgNtuple(subtractor_.get(),7);
-   fillJetNtuple(fjJets_,7);
+   //  fillJetNtuple(fjJets_,7);
 
-   LogDebug("VirtualJetProducer") << "Wrote jets\n";
+   //   cout<<("VirtualJetProducer") << "Wrote jets\n";
 
    ++iev_;
 
@@ -561,26 +562,27 @@ void JetAlgorithmAnalyzer::output(edm::Event & iEvent, edm::EventSetup const& iS
    // and fjClusterSeq_                                                                
 
   //  cout<<"output running "<<endl;
+  //  return;
 
    switch( jetTypeE ) {
    case JetType::CaloJet :
-      writeJets<reco::CaloJet>( iEvent, iSetup);
+     //      writeJets<reco::CaloJet>( iEvent, iSetup);
       writeBkgJets<reco::CaloJet>( iEvent, iSetup);
       break;
    case JetType::PFJet :
-     writeJets<reco::PFJet>( iEvent, iSetup);
+     //     writeJets<reco::PFJet>( iEvent, iSetup);
       writeBkgJets<reco::PFJet>( iEvent, iSetup);
       break;
    case JetType::GenJet :
-     writeJets<reco::GenJet>( iEvent, iSetup);
+     //     writeJets<reco::GenJet>( iEvent, iSetup);
       writeBkgJets<reco::GenJet>( iEvent, iSetup);
       break;
    case JetType::TrackJet :
-     writeJets<reco::TrackJet>( iEvent, iSetup);
+     //     writeJets<reco::TrackJet>( iEvent, iSetup);
       writeBkgJets<reco::TrackJet>( iEvent, iSetup);
       break;
    case JetType::BasicJet :
-     writeJets<reco::BasicJet>( iEvent, iSetup);
+     //     writeJets<reco::BasicJet>( iEvent, iSetup);
       writeBkgJets<reco::BasicJet>( iEvent, iSetup);
       break;
    default:
@@ -594,6 +596,9 @@ template< typename T >
 void JetAlgorithmAnalyzer::writeBkgJets( edm::Event & iEvent, edm::EventSetup const& iSetup )
 {
    // produce output jet collection
+
+  //  cout<<"Started the Random Cones"<<endl;
+
 
    using namespace reco;
 
@@ -639,7 +644,6 @@ void JetAlgorithmAnalyzer::writeBkgJets( edm::Event & iEvent, edm::EventSetup co
    fjFakeJets_.reserve(nFill_);
    constituents_.reserve(nFill_);
 
-   constituents_.reserve(nFill_);
    for(int ijet = 0; ijet < nFill_; ++ijet){
       vector<reco::CandidatePtr> vec;
       constituents_.push_back(vec);
@@ -663,12 +667,6 @@ void JetAlgorithmAnalyzer::writeBkgJets( edm::Event & iEvent, edm::EventSetup co
 
 
    for(unsigned int iy = 0; iy < inputs_.size(); ++iy){
-
-     /*
-   for (vector<fastjet::PseudoJet>::const_iterator input_object = fjInputs_.begin (),
-	   fjInputsEnd = fjInputs_.end();
-	input_object != fjInputsEnd; ++input_object) {
-     */
 
      const reco::CandidatePtr & tower=inputs_[iy];
      const CaloTower* ctc = dynamic_cast<const CaloTower*>(tower.get());
@@ -720,17 +718,71 @@ void JetAlgorithmAnalyzer::writeBkgJets( edm::Event & iEvent, edm::EventSetup co
    if(backToBack_){
       int ir = 0;
       double phiRel = reco::deltaPhi(phiRandom[ir],phi0_);
-      float entry0[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
+      ///float entry0[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
+      Float_t entry0[100];
+      entry0[0]=etaRandom[ir];
+      entry0[1]=phiRandom[ir];
+      entry0[2]=phiRel;
+      entry0[3]=et[ir];
+      entry0[4]=had[ir];
+      entry0[5]=em[ir];
+      entry0[6]=pileUp[ir];
+      entry0[7]=mean[ir];
+      entry0[8]=rms[ir];
+      entry0[9]=bin_;
+      entry0[10]=hf_;
+      entry0[11]=sumET_;
+      entry0[12]=iev_;
+      entry0[13]=dr[ir];
+      entry0[14]=rawJetPt[ir];
+      entry0[15]=evtJetPt;
+      //Float_t entry0[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
       ntRandom0->Fill(entry0);
       ir = 1;
       phiRel = reco::deltaPhi(phiRandom[ir],phi0_);
-      float entry1[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
+      ///float entry1[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
+      Float_t entry1[100];
+      entry1[0]=etaRandom[ir];
+      entry1[1]=phiRandom[ir];
+      entry1[2]=phiRel;
+      entry1[3]=et[ir];
+      entry1[4]=had[ir];
+      entry1[5]=em[ir];
+      entry1[6]=pileUp[ir];
+      entry1[7]=mean[ir];
+      entry1[8]=rms[ir];
+      entry1[9]=bin_;
+      entry1[10]=hf_;
+      entry1[11]=sumET_;
+      entry1[12]=iev_;
+      entry1[13]=dr[ir];
+      entry1[14]=rawJetPt[ir];
+      entry1[15]=evtJetPt;
+      //Float_t entry1[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
       ntRandom1->Fill(entry1);
    }
    
    for(int ir = 0; ir < nFill_; ++ir){
       double phiRel = reco::deltaPhi(phiRandom[ir],phi0_);
-      float entry[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
+      //float entry[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
+      Float_t entry[100];
+      entry[0]=etaRandom[ir];      
+      entry[1]=phiRandom[ir];
+      entry[2]=phiRel;
+      entry[3]=et[ir];
+      entry[4]=had[ir];
+      entry[5]=em[ir];
+      entry[6]=pileUp[ir];
+      entry[7]=mean[ir];
+      entry[8]=rms[ir];
+      entry[9]=bin_;
+      entry[10]=hf_;
+      entry[11]=sumET_;
+      entry[12]=iev_;
+      entry[13]=dr[ir];
+      entry[14]=rawJetPt[ir];
+      entry[15]=evtJetPt;
+      //Float_t entry[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
       if(!backToBack_)ntRandom->Fill(entry);
       if(et[ir] < 0){
 	//	 cout<<"Flipping vector"<<endl;

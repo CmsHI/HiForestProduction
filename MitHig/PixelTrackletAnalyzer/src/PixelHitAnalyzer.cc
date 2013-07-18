@@ -13,7 +13,7 @@
 //
 // Original Author:  Yilmaz Yetkin, Yen-Jie 
 //         Created:  Tue Sep 30 15:14:28 CEST 2008
-// $Id: PixelHitAnalyzer.cc,v 1.30 2011/10/25 13:39:15 yjlee Exp $
+// $Id: PixelHitAnalyzer.cc,v 1.31 2013/02/02 16:26:45 mnguyen Exp $
 //
 //
 
@@ -348,8 +348,8 @@ PixelHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    fillHF(iEvent);
    cout <<"Fill Centrality"<<endl;
    if (doCentrality_) fillCentrality(iEvent, iSetup);
-   map<int,int>::iterator begin = tpmap_.begin();
-   map<int,int>::iterator end = tpmap_.end();
+   //map<int,int>::iterator begin = tpmap_.begin();
+   //map<int,int>::iterator end = tpmap_.end();
 
    pixelTree_->Fill();
 }
@@ -362,7 +362,7 @@ PixelHitAnalyzer::fillVertices(const edm::Event& iEvent){
    // Vertex 1 - n : Reconstructed Vertex from various of algorithms
    if(doMC_){
       unsigned int daughter = 0;
-      int nVertex = 0;
+      //int nVertex = 0;
       int greatestvtx = 0;
       edm::Handle<SimVertexContainer> SimVtx;
       iEvent.getByLabel("g4SimHits",SimVtx);
@@ -370,7 +370,7 @@ PixelHitAnalyzer::fillVertices(const edm::Event& iEvent){
       if (doTrackingParticle_) {
          Handle<TrackingVertexCollection> vertices;
          iEvent.getByLabel("mergedtruth","MergedTrackTruth", vertices);
-         nVertex = vertices->size();
+         //nVertex = vertices->size();
          for (unsigned int i = 0 ; i< vertices->size(); ++i){
    	    daughter = (*vertices)[i].nDaughterTracks();
    	    if( daughter >(*vertices)[greatestvtx].nDaughterTracks()&&fabs((*vertices)[i].position().z())<30000) greatestvtx = i;
@@ -399,10 +399,10 @@ PixelHitAnalyzer::fillVertices(const edm::Event& iEvent){
       iEvent.getByLabel(vertexSrc_[iv],vertexCollection);
       recoVertices = vertexCollection.product();
       unsigned int daughter = 0;
-      int nVertex = 0;
+      //int nVertex = 0;
       int greatestvtx = 0;
       
-      nVertex = recoVertices->size();
+      //nVertex = recoVertices->size();
       for (unsigned int i = 0 ; i< recoVertices->size(); ++i){
 	 daughter = (*recoVertices)[i].tracksSize();
 	 if( daughter > (*recoVertices)[greatestvtx].tracksSize()) greatestvtx = i;
@@ -443,11 +443,11 @@ PixelHitAnalyzer::fillBeamSpot(const edm::Event& iEvent){
 //--------------------------------------------------------------------------------------------------
 void
 PixelHitAnalyzer::fillHits(const edm::Event& iEvent){
-
-   double matchEtaMax = 0.005;
-   double matchPhiMax = 0.01;
-
-   if(doMC_&&doTrackingParticle_) iEvent.getByLabel("mergedtruth","MergedTrackTruth",trackingParticles);
+  /*
+    double matchEtaMax = 0.005;
+    double matchPhiMax = 0.01;
+  */
+  if(doMC_&&doTrackingParticle_) iEvent.getByLabel("mergedtruth","MergedTrackTruth",trackingParticles);
    
    const SiPixelRecHitCollection* rechits;
    Handle<SiPixelRecHitCollection> rchts;
@@ -472,12 +472,14 @@ PixelHitAnalyzer::fillHits(const edm::Event& iEvent){
          const SiPixelRecHit * recHit = &(*recHitIterator);
 
          // SIM INFO
+	 /*
          bool isprimary    = false;
          bool issecondary  = false;
          bool isbackground = false;
          int ptype = -99;
-         int gpid = -9999;
-         int trid = -9999;
+	 */
+         //int gpid = -9999;
+         //int trid = -9999;
 
          const PixelGeomDetUnit* pixelLayer = dynamic_cast<const PixelGeomDetUnit*> (geo_->idToDet(recHit->geographicalId()));
          GlobalPoint gpos = pixelLayer->toGlobal(recHit->localPosition());
@@ -548,12 +550,13 @@ PixelHitAnalyzer::fillHits(const edm::Event& iEvent){
             }
          }
          */
+	 /*
          int type = -99;
 	 if(isbackground) type = 0;
 	 if(isprimary) type = 1;
 	 if(ptype != 2) type = 2;
          if(issecondary) type = 3;
-
+	 */
 	
 	 if(layer == 1){ 
 	    pev_.eta1[pev_.nhits1] = eta;

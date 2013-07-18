@@ -6,4 +6,5 @@
 <use name="DataFormats/HeavyIonEvent"/>
 <use name="DataFormats/VertexReco"/>
 <use name="SimDataFormats/HiGenData"/>
+<use name="SimDataFormats/GeneratorProducts"/>
 <flags EDM_PLUGIN="1"/>

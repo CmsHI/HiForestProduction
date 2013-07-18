@@ -132,6 +132,9 @@ class HLTMuTree : public edm::EDAnalyzer {
       float trkDxy[nmax];
       float trkDz[nmax];
       int isArbitrated[nmax];
+      int trkLayerWMeas[nmax];
+      int nValPixHits[nmax];
+      int nMatchedStations[nmax];
     } GLBMU;
 
     typedef struct {
@@ -148,26 +151,41 @@ class HLTMuTree : public edm::EDAnalyzer {
 	typedef struct {
 	  int npair;
 	  float vProb[nmax];
-	  // float mass[nmax];
+	  float mass[nmax];
+          float e[nmax];
+
+	  float pt[nmax];
 	  float pt1[nmax];
 	  float pt2[nmax];
+          float eta[nmax];
 	  float eta1[nmax];
 	  float eta2[nmax];
-    float phi1[nmax];
+	  float rapidity[nmax];
+	  float phi[nmax];
+	  float phi1[nmax];
 	  float phi2[nmax];
-    int charge1[nmax];
-    int charge2[nmax];
+          int charge[nmax];
+	  int charge1[nmax];
+	  int charge2[nmax];
 	  int isArb1[nmax];
 	  int isArb2[nmax];
-	  float nTrkHit1[nmax];
-	  float nTrkHit2[nmax];
+	  int nMuHit1[nmax];
+	  int nMuHit2[nmax];
+	  int nTrkHit1[nmax];
+	  int nTrkHit2[nmax];
+	  int nTrkLayers1[nmax];
+	  int nTrkLayers2[nmax];
+	  int nPixHit1[nmax];
+	  int nPixHit2[nmax];
+	  int nMatchedStations1[nmax];
+	  int nMatchedStations2[nmax];
 	  float trkChi2_1[nmax];
 	  float trkChi2_2[nmax];
 	  float glbChi2_1[nmax];
 	  float glbChi2_2[nmax];
-    float dxy1[nmax];
+	  float dxy1[nmax];
 	  float dxy2[nmax];
-    float dz1[nmax];
+	  float dz1[nmax];
 	  float dz2[nmax];
 	}DIMU;
 

@@ -13,7 +13,7 @@ Implementation:
 //
 // Original Author:  Yetkin Yilmaz, Frank Ma
 //         Created:  Tue Dec 18 09:44:41 EST 2007
-// $Id: HiGenAnalyzer.cc,v 1.7 2012/06/04 22:19:34 yilmaz Exp $
+// $Id: HiGenAnalyzer.cc,v 1.10 2013/05/30 13:34:20 yilmaz Exp $
 //
 //
 
@@ -86,6 +86,12 @@ struct HydjetEvent{
   Int_t pdg[MAXPARTICLES];
   Int_t chg[MAXPARTICLES];
   Int_t sube[MAXPARTICLES];
+  Int_t sta[MAXPARTICLES];
+  Int_t mot_i[MAXPARTICLES];
+  Int_t mot_pdg[MAXPARTICLES];
+  Float_t mot_pt[MAXPARTICLES];
+  Float_t mot_eta[MAXPARTICLES];
+  Float_t mot_phi[MAXPARTICLES];
 
   Float_t vx;
   Float_t vy;
@@ -132,10 +138,14 @@ class HiGenAnalyzer : public edm::EDAnalyzer {
     Bool_t useHepMCProduct_;
     Bool_t doHI_;
     Bool_t doParticles_;
+    Bool_t doParents_;
+    Bool_t doParentKinematics_;
 
-    Double_t etaMax_;
+  //    Double_t etaMax_;
     Double_t ptMin_;
     Bool_t chargedOnly_;
+    Bool_t stableOnly_;
+  
     edm::InputTag src_;
     edm::InputTag genParticleSrc_;
     edm::InputTag genHIsrc_;
@@ -165,14 +175,35 @@ HiGenAnalyzer::HiGenAnalyzer(const edm::ParameterSet& iConfig)
   useHepMCProduct_ = iConfig.getUntrackedParameter<Bool_t>("useHepMCProduct", false);
   printLists_ = iConfig.getUntrackedParameter<Bool_t>("printLists", false);
   doCF_ = iConfig.getUntrackedParameter<Bool_t>("doMixed", false);
+  doHI_ = iConfig.getUntrackedParameter<Bool_t>("doHI", true);
+
   doVertex_ = iConfig.getUntrackedParameter<Bool_t>("doVertex", false);
-  etaMax_ = iConfig.getUntrackedParameter<Double_t>("etaMax", 2);
+  //  etaMax_ = iConfig.getUntrackedParameter<Double_t>("etaMax", 2);
   ptMin_ = iConfig.getUntrackedParameter<Double_t>("ptMin", 0);
-  chargedOnly_ = iConfig.getUntrackedParameter<Bool_t>("chargedOnly", true);
+  chargedOnly_ = iConfig.getUntrackedParameter<Bool_t>("chargedOnly", false);
+  stableOnly_ = iConfig.getUntrackedParameter<Bool_t>("stableOnly", true);
+
   src_ = iConfig.getUntrackedParameter<edm::InputTag>("src",edm::InputTag("generator"));
   genParticleSrc_ = iConfig.getUntrackedParameter<edm::InputTag>("genpSrc",edm::InputTag("hiGenParticles"));
   genHIsrc_ = iConfig.getUntrackedParameter<edm::InputTag>("genHiSrc",edm::InputTag("heavyIon"));
   doParticles_ = iConfig.getUntrackedParameter<Bool_t>("doParticles", true);
+
+  doParents_ = iConfig.getUntrackedParameter<Bool_t>("doParents", false);
+  doParentKinematics_ = 0;
+  if(doParents_){
+    cout<<"Parents are requested, the following switches will be forced : "<<endl;
+    cout<<"chargedOnly = 0"<<endl;
+    cout<<"stableOnly = 0"<<endl; 
+    cout<<"ptMin = 0"<<endl;
+    cout<<"useHepMCProduct = 0"<<endl;
+
+    chargedOnly_ = 0;
+    stableOnly_ = 0;
+    ptMin_ = 0;
+    useHepMCProduct_ = 0;
+    doParentKinematics_ = iConfig.getUntrackedParameter<Bool_t>("doParentKinematics", true);
+  }
+
 }
 
 
@@ -238,7 +269,7 @@ HiGenAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	HepMC::GenEvent::particle_const_iterator end = subevt->particles_end();
 	for(HepMC::GenEvent::particle_const_iterator it = begin; it != end; ++it){
 	  if ((*it)->momentum().perp()<ptMin_) continue;
-	  if((*it)->status() == 1){
+	  //	  if((*it)->status() == 1){
 	    Int_t pdg_id = (*it)->pdg_id();
 	    Float_t eta = (*it)->momentum().eta();
 	    Float_t phi = (*it)->momentum().phi();
@@ -246,13 +277,14 @@ HiGenAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	    const ParticleData * part = pdt->particle(pdg_id );
 	    Int_t charge = static_cast<Int_t>(part->charge());
 	    if (chargedOnly_&&charge==0) continue;
+            if (stableOnly_&&(*it)->status()!=1) continue;
 
 	    hev_.pt[hev_.mult] = pt;
 	    hev_.eta[hev_.mult] = eta;
 	    hev_.phi[hev_.mult] = phi;
 	    hev_.pdg[hev_.mult] = pdg_id;
 	    hev_.chg[hev_.mult] = charge;
-
+	    hev_.sta[hev_.mult] = (*it)->status();
 	    eta = fabs(eta);
 	    Int_t etabin = 0;
 	    if(eta > 0.5) etabin = 1;
@@ -262,7 +294,6 @@ HiGenAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      ++(hev_.n[etabin]);
 	    }
 	    ++(hev_.mult);
-	  }
 	}
       }
     }else{
@@ -292,7 +323,7 @@ HiGenAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       HepMC::GenEvent::particle_const_iterator end = evt->particles_end();
       for(HepMC::GenEvent::particle_const_iterator it = begin; it != end; ++it){
 	if ((*it)->momentum().perp()<ptMin_) continue;
-	if((*it)->status() == 1){
+	//	if((*it)->status() == 1){
 	  Int_t pdg_id = (*it)->pdg_id();
 	  Float_t eta = (*it)->momentum().eta();
 	  Float_t phi = (*it)->momentum().phi();
@@ -300,12 +331,14 @@ HiGenAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  const ParticleData * part = pdt->particle(pdg_id );
 	  Int_t charge = static_cast<Int_t>(part->charge());
 	  if (chargedOnly_&&charge==0) continue;
+	  if (stableOnly_&&(*it)->status()!=1) continue;
 
 	  hev_.pt[hev_.mult] = pt;
 	  hev_.eta[hev_.mult] = eta;
 	  hev_.phi[hev_.mult] = phi;
 	  hev_.pdg[hev_.mult] = pdg_id;
 	  hev_.chg[hev_.mult] = charge;
+	  hev_.sta[hev_.mult] = (*it)->status();
 
 	  eta = fabs(eta);
 	  Int_t etabin = 0;
@@ -316,7 +349,7 @@ HiGenAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	    ++(hev_.n[etabin]);
 	  }
 	  ++(hev_.mult);
-	}
+	  //	}
       }
     }
   }else{
@@ -324,15 +357,34 @@ HiGenAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     iEvent.getByLabel(genParticleSrc_,parts);
     for(UInt_t i = 0; i < parts->size(); ++i){
       const reco::GenParticle& p = (*parts)[i];
-      if (p.status()!=1) continue;
+      //      if (p.status()!=1) continue;
+
+      if (p.numberOfDaughters() != 0) continue;
+
       if (p.pt()<ptMin_) continue;
       if (chargedOnly_&&p.charge()==0) continue;
+      if (stableOnly_&&p.status()!=1) continue;
+
       hev_.pt[hev_.mult] = p.pt();
       hev_.eta[hev_.mult] = p.eta();
       hev_.phi[hev_.mult] = p.phi();
       hev_.pdg[hev_.mult] = p.pdgId();
       hev_.chg[hev_.mult] = p.charge();
       hev_.sube[hev_.mult] = p.collisionId();
+      hev_.sta[hev_.mult] = p.status();
+
+      if(doParents_){
+	const reco::Candidate * mother = p.mother();
+	if(mother){
+	  // hev_.mot_i[hev_.mult] = // what is it?
+	  hev_.mot_pdg[hev_.mult] = p.pdgId();
+          hev_.mot_pt[hev_.mult] = p.pt();
+          hev_.mot_eta[hev_.mult] = p.eta();
+          hev_.mot_phi[hev_.mult] = p.phi();
+
+	}	
+      }
+
       Double_t eta = fabs(p.eta());
 
       Int_t etabin = 0;
@@ -347,6 +399,12 @@ HiGenAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     if(doHI_){
       edm::Handle<GenHIEvent> higen;
       iEvent.getByLabel(genHIsrc_,higen);
+
+      npart = higen->Npart();
+      ncoll = higen->Ncoll();
+      nhard = higen->Nhard();
+      phi0 = higen->evtPlane();
+
     }
   }
 
@@ -436,6 +494,17 @@ HiGenAnalyzer::beginJob()
       hydjetTree_->Branch("phi",hev_.phi,"phi[mult]/F");
       hydjetTree_->Branch("pdg",hev_.pdg,"pdg[mult]/I");
       hydjetTree_->Branch("chg",hev_.chg,"chg[mult]/I");
+      if(!stableOnly_)hydjetTree_->Branch("sta",hev_.sta,"sta[mult]/I");
+      if(doParents_){
+	hydjetTree_->Branch("mot_i",hev_.mot_i,"mot_i[mult]/I");
+        hydjetTree_->Branch("mot_pdg",hev_.mot_pdg,"mot_pdg[mult]/I");
+	if(doParentKinematics_){
+	  hydjetTree_->Branch("mot_pt",hev_.mot_pt,"mot_pt[mult]/F");
+	  hydjetTree_->Branch("mot_eta",hev_.mot_eta,"mot_eta[mult]/F");
+	  hydjetTree_->Branch("mot_phi",hev_.mot_phi,"mot_phi[mult]/F");
+	}
+      }
+
       hydjetTree_->Branch("sube",hev_.sube,"sube[mult]/I");
 
       hydjetTree_->Branch("vx",&hev_.vx,"vx/F");

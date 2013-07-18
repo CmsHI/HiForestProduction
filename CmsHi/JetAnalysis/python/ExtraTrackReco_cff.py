@@ -4,6 +4,11 @@ import FWCore.ParameterSet.Config as cms
 from RecoLocalTracker.Configuration.RecoLocalTracker_cff import *
 from RecoHI.Configuration.Reconstruction_HI_cff import *
 
+from RecoHI.HiTracking.hiIterTracking_cff import *
+from RecoHI.HiTracking.HICaloCompatibleTracks_cff import *
+
+hiGeneralCaloMatchedTracks = hiCaloCompatibleTracks.clone(srcTracks = 'hiGeneralTracks')
+
 #Track Reco
 rechits = cms.Sequence(siPixelRecHits * siStripMatchedRecHits)
 hiTrackReReco = cms.Sequence(rechits * heavyIonTracking)
@@ -66,6 +71,8 @@ hiMergedTracksGeneralCalo = hiGoodMergedTracks.clone(
             TrackProducer2  = "hiConformalPixelTracks")
 
 ##################################################
+
+heavyIonTracking *= hiIterTracking
 
 rechits = cms.Sequence(siPixelRecHits * siStripMatchedRecHits)
 hiTrackReco = cms.Sequence(hiTracks * hiCaloTracks* hiMergedTracks)

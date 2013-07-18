@@ -1,0 +1,24 @@
+[CRAB]
+
+jobtype = cmssw
+scheduler = remoteGlidein
+use_server = 0
+
+[CMSSW]
+
+datasetpath=/ExpressPhysics/HIRun2013-Express-v1/FEVT
+pset=rppbtrackanalyzer_expressPA_cfg.py
+runselection= 209942
+lumis_per_job = 20
+total_number_of_lumis = -1
+output_file = trackAnalysis.root
+
+[USER]
+
+copy_data = 0
+check_user_remote_dir = 0
+publish_data = 0
+eMail = eric.appelt@gmail.com
+return_data = 1
+
+[GRID]

@@ -18,6 +18,7 @@
 <use name="DataFormats/HepMCCandidate"/>
 <use name="DataFormats/EcalRecHit"/>
 <use name="DataFormats/HcalRecHit"/>
+<use name="DataFormats/HcalDigi"/>
 <use name="DataFormats/HcalDetId"/>
 <use name="DataFormats/DetId"/>
 <use name="DataFormats/GeometryVector"/>
@@ -27,6 +28,8 @@
 <use name="RecoJets/JetProducers"/>
 <use name="DataFormats/HeavyIonEvent"/>
 <use name="CondFormats/JetMETObjects"/>
+<use name="CalibFormats/HcalObjects"/>
+<use name="RecoLocalCalo/HcalRecAlgos"/>
 <flags EDM_PLUGIN="1"/>
 <export>
  <lib name="CmsHiJetAnalysis"/>

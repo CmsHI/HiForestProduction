@@ -98,9 +98,11 @@ class HiInclusiveJetAnalyzer : public edm::EDAnalyzer {
   bool doLifeTimeTagging_;
   bool doLifeTimeTaggingExtras_;
   bool saveBfragments_;
+  bool skipCorrections_;
 
   double rParam;
   double hardPtMin_;
+  double jetPtMin_;
 
   TTree *t;
   edm::Service<TFileService> fs1;
@@ -183,9 +185,40 @@ class HiInclusiveJetAnalyzer : public edm::EDAnalyzer {
     float hcalSum[MAXJETS];
     float ecalSum[MAXJETS];
 
+
+    float fHPD[MAXJETS];
+    float fRBX[MAXJETS];
+    int n90[MAXJETS];
+    float fSubDet1[MAXJETS];
+    float fSubDet2[MAXJETS];
+    float fSubDet3[MAXJETS];
+    float fSubDet4[MAXJETS];
+    float restrictedEMF[MAXJETS];
+    int nHCAL[MAXJETS];
+    int nECAL[MAXJETS];
+    float apprHPD[MAXJETS];
+    float apprRBX[MAXJETS];
+
+    //    int n90[MAXJETS];
+    int n2RPC[MAXJETS];
+    int n3RPC[MAXJETS];
+    int nRPC[MAXJETS];
+
+    float fEB[MAXJETS];
+    float fEE[MAXJETS];
+    float fHB[MAXJETS];
+    float fHE[MAXJETS];
+    float fHO[MAXJETS];
+    float fLong[MAXJETS];
+    float fShort[MAXJETS];
+    float fLS[MAXJETS];
+    float fHFOOT[MAXJETS];
+
+
     int subid[MAXJETS];
 
      float matchedPt[MAXJETS];
+     float matchedRawPt[MAXJETS];
      float matchedR[MAXJETS];
 
     float discr_csvMva[MAXJETS];

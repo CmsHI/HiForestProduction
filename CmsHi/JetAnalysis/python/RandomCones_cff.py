@@ -2,83 +2,80 @@ from RecoJets.JetProducers.AnomalousCellParameters_cfi import *
 from RecoHI.HiJetAlgos.HiPFJetParameters_cff import *
 from RecoHI.HiJetAlgos.HiCaloJetParameters_cff import *
 
-
-akPu3PFConesAna = cms.EDProducer(
-       "JetAlgorithmAnalyzer",
-          HiPFJetParameters,
-          AnomalousCellParameters,
-          MultipleAlgoIteratorBlock,
-          jetAlgorithm = cms.string("AntiKt"),
-          rParam       = cms.double(0.3),
-          useInputJets = cms.untracked.bool(True),
-          inputJetSrc = cms.InputTag("akPu3PFpatJets"),
-          useTowersForBkg = cms.bool(True),
-          centralityTag = cms.InputTag("hiCentrality"),
-          evtPlaneTag = cms.InputTag("hiEvtPlane","recoLevel"),
-          avoidNegative = cms.bool(False),
-          patJetSrc = cms.untracked.InputTag("akPu3PFpatJets"),
-       evtPlaneIndex = cms.untracked.int32(21),
-       doBackToBack  = cms.untracked.bool(True),
-       centrality  = cms.untracked.int32(-1)
-          )
-
-akPu3PFConesAna.doPUOffsetCorr = True
-
-akPu3PFConesAna.jetType = 'BasicJet'
-akPu3PFConesAna.src = cms.InputTag("PFTowers")
-
-akPu5PFConesAna = akPu3PFConesAna.clone(
-          rParam       = cms.double(0.5),
-          )
-
-akPu5CaloConesAna = akPu3PFConesAna.clone(
-    src = cms.InputTag("towerMaker"),
-    rParam       = cms.double(0.5)
+akPu1PFCones = cms.EDProducer(
+    "JetAlgorithmAnalyzer",
+    HiPFJetParameters,
+    AnomalousCellParameters,
+    MultipleAlgoIteratorBlock,
+    jetAlgorithm = cms.string("AntiKt"),
+    rParam       = cms.double(0.1),
+    useInputJets = cms.untracked.bool(True),
+    useTowersForBkg = cms.bool(True),
+    centralityTag = cms.InputTag("pACentrality"),
+    evtPlaneTag = cms.InputTag("hiEvtPlane","recoLevel"),
+    avoidNegative = cms.bool(False),
+    patJetSrc = cms.untracked.InputTag("akPu1PFpatJets"),
+    evtPlaneIndex = cms.untracked.int32(21),
+    doBackToBack  = cms.untracked.bool(True),
+    centrality  = cms.untracked.int32(-1),
+    doRecoEvtPlane  = cms.untracked.bool(False),        
+    doAnalysis  = cms.untracked.bool(False),
+    puPtMin = cms.double(15.0)    
     )
 
-akPu3CaloConesAna = akPu3PFConesAna.clone(
-    src = cms.InputTag("towerMaker"),
-    rParam       = cms.double(0.3)
-    )
+akPu1PFCones.doPUOffsetCorr = True
+akPu1PFCones.jetType = 'BasicJet'
+akPu1PFCones.src = cms.InputTag("PFTowers")
 
-icPu5CaloConesAna = cms.EDProducer(
-       "JetAlgorithmAnalyzer",
-          HiCaloJetParameters,
-          AnomalousCellParameters,
-          MultipleAlgoIteratorBlock,
-          jetAlgorithm = cms.string("IterativeCone"),
-          rParam       = cms.double(0.5),
-          useInputJets = cms.untracked.bool(True),
-          inputJetSrc = cms.InputTag("iterativeConePu5CaloJets"),
-          useTowersForBkg = cms.bool(True),
-          centralityTag = cms.InputTag("hiCentrality"),
-          evtPlaneTag = cms.InputTag("hiEvtPlane","recoLevel"),
+akPu2PFCones = akPu1PFCones.clone(rParam = 0.2, patJetSrc = cms.untracked.InputTag("akPu2PFpatJets"))
+akPu3PFCones = akPu1PFCones.clone(rParam = 0.3, patJetSrc = cms.untracked.InputTag("akPu3PFpatJets"))
+akPu4PFCones = akPu1PFCones.clone(rParam = 0.4, patJetSrc = cms.untracked.InputTag("akPu4PFpatJets"))
+akPu5PFCones = akPu1PFCones.clone(rParam = 0.5, patJetSrc = cms.untracked.InputTag("akPu5PFpatJets"))
+akPu6PFCones = akPu1PFCones.clone(rParam = 0.6, patJetSrc = cms.untracked.InputTag("akPu6PFpatJets"))
 
-          avoidNegative = cms.bool(False),
-          patJetSrc = cms.untracked.InputTag("icPu5patJets")
-
-          )
+akPu1CaloCones = akPu1PFCones.clone(src = cms.InputTag("towerMaker"), rParam = 0.1, patJetSrc = cms.untracked.InputTag("akPu1CalopatJets"))
+akPu2CaloCones = akPu1PFCones.clone(src = cms.InputTag("towerMaker"), rParam = 0.2, patJetSrc = cms.untracked.InputTag("akPu2CalopatJets"))
+akPu3CaloCones = akPu1PFCones.clone(src = cms.InputTag("towerMaker"), rParam = 0.3, patJetSrc = cms.untracked.InputTag("akPu3CalopatJets"))
+akPu4CaloCones = akPu1PFCones.clone(src = cms.InputTag("towerMaker"), rParam = 0.4, patJetSrc = cms.untracked.InputTag("akPu4CalopatJets"))
+akPu5CaloCones = akPu1PFCones.clone(src = cms.InputTag("towerMaker"), rParam = 0.5, patJetSrc = cms.untracked.InputTag("akPu5CalopatJets"))
+akPu6CaloCones = akPu1PFCones.clone(src = cms.InputTag("towerMaker"), rParam = 0.6, patJetSrc = cms.untracked.InputTag("akPu6CalopatJets"))
 
 
-akPu5PFConesAna.puPtMin = cms.double(25)
-akPu3PFConesAna.puPtMin = cms.double(15)
+akPu1PFCones.puPtMin = 5
+akPu2PFCones.puPtMin = 10
+akPu3PFCones.puPtMin = 15
+akPu4PFCones.puPtMin = 20
+akPu5PFCones.puPtMin = 25
+akPu6PFCones.puPtMin = 30
 
-akPu3CaloConesAna.puPtMin = cms.double(10)
-akPu5CaloConesAna.puPtMin = cms.double(10)
-
-icPu5CaloConesAna.puPtMin = cms.double(10)
-
-icPu5CaloConesAna.doPUOffsetCorr = True
-icPu5CaloConesAna.jetType = 'BasicJet'
-icPu5CaloConesAna.src = cms.InputTag("towerMaker")
-
-
+akPu1CaloCones.puPtMin = 2
+akPu2CaloCones.puPtMin = 4
+akPu3CaloCones.puPtMin = 6
+akPu4CaloCones.puPtMin = 8
+akPu5CaloCones.puPtMin = 10
+akPu6CaloCones.puPtMin = 12
 
 randomCones = cms.Sequence(
-    akPu3PFConesAna+
-    akPu5PFConesAna+
-    akPu3CaloConesAna+
-    akPu5CaloConesAna+
-    icPu5CaloConesAna
+    akPu2PFCones+
+    akPu3PFCones+
+    akPu4PFCones+
+    akPu5PFCones+
+    akPu6PFCones+
+    akPu2CaloCones+
+    akPu3CaloCones+
+    akPu4CaloCones+
+    akPu5CaloCones+
+    akPu6CaloCones
+    )
+
+randomCones2to5 = cms.Sequence(
+    akPu2PFCones+
+    akPu3PFCones+
+    akPu4PFCones+
+    akPu5PFCones+
+    akPu2CaloCones+
+    akPu3CaloCones+
+    akPu4CaloCones+
+    akPu5CaloCones
     )
 

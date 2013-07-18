@@ -1,6 +1,3 @@
 #Automatically created by SCRAM
 import os
-localrt=os.getenv('LOCALRT', None)
-arch=os.getenv('SCRAM_ARCH', None)
-if localrt != None:
-  __path__.append(localrt+'/cfipython/'+arch+'/MNguyen/InclusiveJetAnalyzer')
+__path__.append(os.path.dirname(os.path.abspath(__file__).rsplit('/CmsHi/JetAnalysis/',1)[0])+'/cfipython/slc5_amd64_gcc462/CmsHi/JetAnalysis')
