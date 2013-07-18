@@ -4,11 +4,6 @@ import FWCore.ParameterSet.Config as cms
 from RecoLocalTracker.Configuration.RecoLocalTracker_cff import *
 from RecoHI.Configuration.Reconstruction_HI_cff import *
 
-from RecoHI.HiTracking.hiIterTracking_cff import *
-from RecoHI.HiTracking.HICaloCompatibleTracks_cff import *
-
-hiGeneralCaloMatchedTracks = hiCaloCompatibleTracks.clone(srcTracks = 'hiGeneralTracks')
-
 #Track Reco
 rechits = cms.Sequence(siPixelRecHits * siStripMatchedRecHits)
 hiTrackReReco = cms.Sequence(rechits * heavyIonTracking)
@@ -35,49 +30,11 @@ hiSelectedTrackQuality = cms.EDFilter("TrackSelector",
 
 
 
-from Appeltel.PixelTracksRun2010.HiLowPtPixelTracksFromReco_cff import *
-from Appeltel.PixelTracksRun2010.HiMultipleMergedTracks_cff import *
-
-hiMergedTracks = hiGoodMergedTracks.clone(
-    TrackProducer1  = "hiCaloTracks",
-    TrackProducer2  = "hiConformalPixelTracks")
-
-hiCaloTracks = cms.EDFilter("TrackSelector",
-                            src = cms.InputTag("hiGeneralCaloMatchedTracks"),
-                            cut = cms.string(
-    'quality("highPuritySetWithPV")')
-                            )
-
 hiTracks = cms.EDFilter("TrackSelector",
-                                src = cms.InputTag("hiGeneralCaloMatchedTracks"),
-                                cut = cms.string(
+                        src = cms.InputTag("hiGeneralCaloMatchedTracks"),
+                        cut = cms.string(
     'quality("highPurity")')
-                                )
-
-##################################################
+                        )
 
 
-
-hiMergedTracksSelcted = hiGoodMergedTracks.clone(
-        TrackProducer1  = "hiSelectedTrackQuality",
-            TrackProducer2  = "hiConformalPixelTracks")
-
-hiMergedTracksGeneral = hiGoodMergedTracks.clone(
-        TrackProducer1  = "hiGeneralTracksQuality",
-            TrackProducer2  = "hiConformalPixelTracks")
-
-hiMergedTracksGeneralCalo = hiGoodMergedTracks.clone(
-        TrackProducer1  = "hiCaloCompatibleGeneralTracksQuality",
-            TrackProducer2  = "hiConformalPixelTracks")
-
-##################################################
-
-heavyIonTracking *= hiIterTracking
-
-rechits = cms.Sequence(siPixelRecHits * siStripMatchedRecHits)
-hiTrackReco = cms.Sequence(hiTracks * hiCaloTracks* hiMergedTracks)
-hiTrackDebug = cms.Sequence( hiCaloCompatibleGeneralTracksQuality * hiMergedTracksGeneralCalo *
-                                  hiSelectedTrackQuality * hiMergedTracksSelcted *
-                                  hiGeneralTracksQuality * hiMergedTracksGeneral
-                                  )
 

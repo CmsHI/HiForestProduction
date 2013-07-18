@@ -9,8 +9,6 @@
 <use   name="DataFormats/SiPixelDigi"/>
 <use   name="DataFormats/TrackingRecHit"/>
 <use   name="DataFormats/VertexReco"/>
-<use   name="DataFormats/HepMCCandidate"/>
-<use   name="RecoBTag/SecondaryVertex"/>
 <use   name="FWCore/Framework"/>
 <use   name="FWCore/ServiceRegistry"/>
 <use   name="FWCore/PluginManager"/>
@@ -29,5 +27,6 @@
 <use   name="Geometry/Records"/>
 <use   name="RecoTracker/Record"/>
 <use   name="HLTrigger/HLTcore"/>
-<use   name="RecoBTag/SecondaryVertex"/>
 <flags   EDM_PLUGIN="1"/>
+<export>
+</export>

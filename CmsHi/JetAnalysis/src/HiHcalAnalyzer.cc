@@ -1,269 +1,285 @@
-//---------------------------------------------------------------------------
+// -*- C++ -*-
+//
+// Package:    HiHcalAnalyzer
+// Class:      HiHcalAnalyzer
+// 
+/**\class HiHcalAnalyzer HiHcalAnalyzer.cc CmsHi/HiHcalAnalyzer/src/HiHcalAnalyzer.cc
+
+ Description: [one line class summary]
+
+ Implementation:
+     [Notes on implementation]
+*/
+//
+// Original Author:  Yetkin Yilmaz
+//         Created:  Thu Dec  1 10:28:28 EST 2011
+// $Id: HiHcalAnalyzer.cc,v 1.2 2011/12/02 01:05:57 yjlee Exp $
+//
+//
+
+#define versionTag "v1"
+
+// system include files
 #include <memory>
-//---------------------------------------------------------------------------
-#include "TTree.h"
-//---------------------------------------------------------------------------
+#include <vector>
+#include <iostream>
+
+// user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
-#include "FWCore/ServiceRegistry/interface/Service.h"
-#include "CommonTools/UtilAlgos/interface/TFileService.h"
-//---------------------------------------------------------------------------
+
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
-//---------------------------------------------------------------------------
+
 #include "DataFormats/METReco/interface/HcalNoiseSummary.h"
-#include "DataFormats/METReco/interface/HcalNoiseRBX.h"
-#include "RecoMET/METAlgorithms/interface/HcalHPDRBXMap.h"
-//---------------------------------------------------------------------------
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-//---------------------------------------------------------------------------
-class HiHcalAnalyzer : public edm::EDAnalyzer
-{
-public:
-   explicit HiHcalAnalyzer(const edm::ParameterSet&);
-   ~HiHcalAnalyzer();
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
 
-   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+#include "TNtuple.h"
 
-private:
-   virtual void beginJob();
-   virtual void analyze(const edm::Event&, const edm::EventSetup&);
-   virtual void endJob();
+using namespace std;
 
-   virtual void beginRun(edm::Run const&, edm::EventSetup const&);
-   virtual void endRun(edm::Run const&, edm::EventSetup const&);
-   virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
-   virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
 
-private:
-   edm::Service<TFileService> FileService;
+//
+// class declaration
+//
 
-private:
-   void CleanUp();
+class HiHcalAnalyzer : public edm::EDAnalyzer {
+   public:
+      explicit HiHcalAnalyzer(const edm::ParameterSet&);
+      ~HiHcalAnalyzer();
 
-private:
-   edm::InputTag NoiseSummaryTag;
-   edm::InputTag NoiseRBXTag;
+      static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
-private:
-   TTree *OutputTree;
 
-   int RunNumber;
-   long long EventNumber;
-   int LumiSection;
-   int Bunch;
-   int Orbit;
-   long long Time;
+   private:
+      virtual void beginJob() ;
+      virtual void analyze(const edm::Event&, const edm::EventSetup&);
+      virtual void endJob() ;
 
-   int FilterStatus;
-   int MaxZeros, MaxHPDHits, MaxHPDNoOtherHits, MaxRBXHits;
-   int IsolatedCount, FlatNoiseCount, SpikeNoiseCount;
-   double IsolatedSumE, FlatNoiseSumE, SpikeNoiseSumE;
-   double IsolatedSumET, FlatNoiseSumET, SpikeNoiseSumET;
-   bool HasBadTS4TS5;
-   double TotalCalibCharge;
-   double MinE2E10, MaxE2E10;
+      virtual void beginRun(edm::Run const&, edm::EventSetup const&);
+      virtual void endRun(edm::Run const&, edm::EventSetup const&);
+      virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
+      virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
 
-   double RBXEnergy[72], RBXEnergy15[72];
-   int RBXHitCount[72];
-   double RBXR45[72];
-   double RBXCharge[72][10];
+      // ----------member data ---------------------------
+
+   edm::Service<TFileService> fs;
+   TTree* t;
+
+
+   int filterstatus, noisetype;
+   float emenergy, hadenergy, trackenergy;
+   float min10, max10, rms10;
+   float min25, max25, rms25;
+   int cnthit10, cnthit25;
+   float mine2ts, mine10ts;
+   float maxe2ts, maxe10ts;
+   int maxzeros;
+   int maxhpdhits, maxhpdhitsnoother, maxrbxhits;
+   float minhpdemf, minrbxemf;
+   int nproblemRBXs;
+   int nisolnoise;
+   float isolnoisee, isolnoiseet;
+   int nflatnoise;
+   float flatnoisee, flatnoiseet;
+   int nspikenoise;
+   float spikenoisee, spikenoiseet;
+   int ntrianglenoise;
+   float trianglenoisee, trianglenoiseet;
+   int nts4ts5noise;
+   float ts4ts5noisee, ts4ts5noiseet;
+
+   bool hasBadRBXTS4TS5;
+
+
 };
-//---------------------------------------------------------------------------
+
+//
+// constants, enums and typedefs
+//
+
+//
+// static data member definitions
+//
+
+//
+// constructors and destructor
+//
 HiHcalAnalyzer::HiHcalAnalyzer(const edm::ParameterSet& iConfig)
+
 {
-   NoiseSummaryTag = iConfig.getUntrackedParameter<edm::InputTag>("NoiseSummaryTag");
-   NoiseRBXTag = iConfig.getUntrackedParameter<edm::InputTag>("NoiseRBXTag");
+   //now do what ever initialization is needed
+
 }
-//---------------------------------------------------------------------------
+
+
 HiHcalAnalyzer::~HiHcalAnalyzer()
 {
+ 
+   // do anything here that needs to be done at desctruction time
+   // (e.g. close files, deallocate resources etc.)
+
 }
-//---------------------------------------------------------------------------
-void HiHcalAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+
+
+//
+// member functions
+//
+
+// ------------ method called for each event  ------------
+void
+HiHcalAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
-   using namespace reco;
-   
-   // Clean-up variables
-   CleanUp();
 
-   // Basic event coordinates
-   RunNumber = iEvent.id().run();
-   EventNumber = iEvent.id().event();
-   LumiSection = iEvent.luminosityBlock();
-   Bunch = iEvent.bunchCrossing();
-   Orbit = iEvent.orbitNumber();
-   Time = iEvent.time().value();
-   
-   // Get stuff
-   Handle<HcalNoiseSummary> hSummary;
-   iEvent.getByLabel(NoiseSummaryTag, hSummary);
+   edm::Handle<HcalNoiseSummary> hcalSummary;
+   iEvent.getByType(hcalSummary);
 
-   Handle<HcalNoiseRBXCollection> hRBX;
-   iEvent.getByLabel(NoiseRBXTag, hRBX);
+   filterstatus= hcalSummary->noiseFilterStatus ();
+   noisetype= hcalSummary->noiseType ();
+   emenergy= hcalSummary->eventEMEnergy ();
+   hadenergy= hcalSummary->eventHadEnergy ();
+   trackenergy= hcalSummary-> eventTrackEnergy();
+   min10= hcalSummary->min10GeVHitTime ();
+   max10= hcalSummary->max10GeVHitTime ();
+   rms10= hcalSummary->rms10GeVHitTime ();
+   min25= hcalSummary->min25GeVHitTime ();
+   max25= hcalSummary->max25GeVHitTime ();
+   rms25= hcalSummary->rms25GeVHitTime ();
+   cnthit10= hcalSummary->num10GeVHits ();
+   cnthit25= hcalSummary->num25GeVHits ();
+   mine2ts= hcalSummary->minE2TS ();
+   mine10ts= hcalSummary->minE10TS ();
+   maxe2ts= hcalSummary->maxE2TS ();
+   maxe10ts= hcalSummary->maxE10TS ();
+   maxzeros= hcalSummary->maxZeros ();
+   maxhpdhits= hcalSummary->maxHPDHits ();
+   maxhpdhitsnoother= hcalSummary->maxHPDNoOtherHits ();
+   maxrbxhits= hcalSummary->maxRBXHits ();
+   minhpdemf= hcalSummary->minHPDEMF();
+   minrbxemf= hcalSummary->minRBXEMF ();
 
-   // Check if the stuff we get is good.  If not...
-   if(hSummary.isValid() == false || hRBX.isValid() == false)
-   {
-      // ...then we barf at user about bad file, but we still fill in a filler entry in the tree
-      edm::LogError("DataNotFound") << "Hcal noise summary information is invalid for "
-         "run " << RunNumber << " event " << EventNumber << " LS " << LumiSection;
-      OutputTree->Fill();
-      return;
-   }
+   nproblemRBXs= hcalSummary->numProblematicRBXs ();
+   nisolnoise= hcalSummary->numIsolatedNoiseChannels ();
+   isolnoisee= hcalSummary->isolatedNoiseSumE ();
+   isolnoiseet= hcalSummary->isolatedNoiseSumEt ();
+   nflatnoise= hcalSummary->numFlatNoiseChannels ();
+   flatnoisee= hcalSummary->flatNoiseSumE ();
+   flatnoiseet= hcalSummary->flatNoiseSumEt ();
+   nspikenoise= hcalSummary->numSpikeNoiseChannels ();
+   spikenoisee= hcalSummary->spikeNoiseSumE ();
+   spikenoiseet= hcalSummary->spikeNoiseSumEt ();
+   ntrianglenoise= hcalSummary->numTriangleNoiseChannels ();
+   trianglenoisee= hcalSummary->triangleNoiseSumE ();
+   trianglenoiseet= hcalSummary->triangleNoiseSumEt ();
+   nts4ts5noise= hcalSummary->numTS4TS5NoiseChannels ();
+   ts4ts5noisee= hcalSummary->TS4TS5NoiseSumE ();
+   ts4ts5noiseet= hcalSummary->TS4TS5NoiseSumEt ();
+   hasBadRBXTS4TS5= hcalSummary->HasBadRBXTS4TS5 ();
 
-   // Dump information out of the summary object
-   FilterStatus = hSummary->noiseFilterStatus();
-   MaxZeros = hSummary->maxZeros();
-   MaxHPDHits = hSummary->maxHPDHits();
-   MaxHPDNoOtherHits = hSummary->maxHPDNoOtherHits();
-   MaxRBXHits = hSummary->maxRBXHits();
-   IsolatedCount = hSummary->numIsolatedNoiseChannels();
-   IsolatedSumE = hSummary->isolatedNoiseSumE();
-   IsolatedSumET = hSummary->isolatedNoiseSumEt();
-   FlatNoiseCount = hSummary->numFlatNoiseChannels();
-   FlatNoiseSumE = hSummary->flatNoiseSumE();
-   FlatNoiseSumET = hSummary->flatNoiseSumEt();
-   SpikeNoiseCount = hSummary->numSpikeNoiseChannels();
-   SpikeNoiseSumE = hSummary->spikeNoiseSumE();
-   SpikeNoiseSumET = hSummary->spikeNoiseSumEt();
-   HasBadTS4TS5 = hSummary->HasBadRBXTS4TS5();
-   TotalCalibCharge = hSummary->GetTotalCalibCharge();
-   MinE2E10 = hSummary->minE2Over10TS();
-   MaxE2E10 = hSummary->maxE2Over10TS();
-
-   // Dump information out of the RBX array
-   for(int iRBX = 0; iRBX < (int)hRBX->size(); iRBX++)
-   {
-      int ID = (*hRBX)[iRBX].idnumber();
-      if(ID >= 72)   // WTF!
-         continue;
-
-      RBXEnergy[ID] = (*hRBX)[iRBX].recHitEnergy();
-      RBXEnergy15[ID] = (*hRBX)[iRBX].recHitEnergy(1.5);
-      RBXHitCount[ID] = (*hRBX)[iRBX].numRecHits(1.5);
-
-      std::vector<float> allcharge = (*hRBX)[iRBX].allCharge();
-      for(int iTS = 0; iTS < 10 && iTS < (int)allcharge.size(); iTS++)
-         RBXCharge[ID][iTS] = allcharge[iTS];
-
-      if(RBXCharge[ID][4] + RBXCharge[ID][5] > 1)
-         RBXR45[ID] = (RBXCharge[ID][4] - RBXCharge[ID][5]) / (RBXCharge[ID][4] + RBXCharge[ID][5]);
-      else
-         RBXR45[ID] = -9999;
-   }
-
-   // Finally fill the tree
-   OutputTree->Fill();
+   t->Fill();
 }
-//---------------------------------------------------------------------------
-void HiHcalAnalyzer::beginJob()
+
+
+// ------------ method called once each job just before starting event loop  ------------
+void 
+HiHcalAnalyzer::beginJob()
 {
-   OutputTree = FileService->make<TTree>("hbhenoise", "v1");
 
-   OutputTree->Branch("run", &RunNumber, "run/I");
-   OutputTree->Branch("event", &EventNumber, "event/LL");
-   OutputTree->Branch("luminosityBlock", &LumiSection, "luminosityBlock/I");
-   OutputTree->Branch("bunchCrossing", &Bunch, "bunchCrossing/I");
-   OutputTree->Branch("orbit", &Orbit, "orbit/I");
-   OutputTree->Branch("time", &Time, "time/LL");
+   t = fs->make<TTree>("hcalNoise",versionTag);
+   t->Branch("filterstatus",&filterstatus,"filterstatus/I");
+   t->Branch("noisetype",&noisetype,"noisetype/I");
+   t->Branch("emenergy",&emenergy,"emenergy/F");
+   t->Branch("hadenergy",&hadenergy,"hadenergy/F");
+   t->Branch("trackenergy",&trackenergy,"trackenergy/F");
+   t->Branch("min10",&min10,"min10/F");
+   t->Branch("max10",&max10,"max10/F");
+   t->Branch("rms10",&rms10,"rms10/F");
+
+   t->Branch("min25",&min25,"min25/F");
+   t->Branch("max25",&max25,"max25/F");
+   t->Branch("rms25",&rms25,"rms25/F");
+
+   t->Branch("cnthit10",&cnthit10,"cnthit10/I");
+   t->Branch("cnthit25",&cnthit25,"cnthit25/I");
+
+   t->Branch("mine2ts",&mine2ts,"mine2ts/F");
+
+   t->Branch("maxe2ts",&maxe2ts,"maxe2ts/F");
+   t->Branch("maxe10ts",&maxe10ts,"maxe10ts/F");
 
 
-   OutputTree->Branch("FilterStatus", &FilterStatus, "FilterStatus/I");
-   OutputTree->Branch("MaxZeros", &MaxZeros, "MaxZeros/I");
-   OutputTree->Branch("MaxHPDHits", &MaxHPDHits, "MaxHPDHits/I");
-   OutputTree->Branch("MaxHPDNoOtherHits", &MaxHPDNoOtherHits, "MaxHPDNoOtherHits/I");
-   OutputTree->Branch("MaxRBXHits", &MaxRBXHits, "MaxRBXHits/I");
-   OutputTree->Branch("IsolatedCount", &IsolatedCount, "IsolatedCount/I");
-   OutputTree->Branch("IsolatedSumE", &IsolatedSumE, "IsolatedSumE/D");
-   OutputTree->Branch("IsolatedSumET", &IsolatedSumET, "IsolatedSumET/D");
-   OutputTree->Branch("FlatNoiseCount", &FlatNoiseCount, "FlatNoiseCount/I");
-   OutputTree->Branch("FlatNoiseSumE", &FlatNoiseSumE, "FlatNoiseSumE/D");
-   OutputTree->Branch("FlatNoiseSumET", &FlatNoiseSumET, "FlatNoiseSumET/D");
-   OutputTree->Branch("SpikeNoiseCount", &SpikeNoiseCount, "SpikeNoiseCount/I");
-   OutputTree->Branch("SpikeNoiseSumE", &SpikeNoiseSumE, "SpikeNoiseSumE/D");
-   OutputTree->Branch("SpikeNoiseSumET", &SpikeNoiseSumET, "SpikeNoiseSumET/D");
-   OutputTree->Branch("HasBadTS4TS5", &HasBadTS4TS5, "HasBadTS4TS5/O");
-   OutputTree->Branch("TotalCalibCharge", &TotalCalibCharge, "TotalCalibCharge/D");
-   OutputTree->Branch("MinE2E10", &MinE2E10, "MinE2E10/D");
-   OutputTree->Branch("MaxE2E10", &MaxE2E10, "MaxE2E10/D");
+   t->Branch("maxzeros",&maxzeros,"maxzeros/I");
+   t->Branch("maxhpdhits",&maxhpdhits,"maxhpdhits/I");
+   t->Branch("maxhpdhitsnoother",&maxhpdhitsnoother,"maxhpdhitsnoother/I");
+   t->Branch("maxrbxhits",&maxrbxhits,"maxrbxhits/I");
 
-   OutputTree->Branch("RBXEnergy", RBXEnergy, "RBXEnergy[72]/D");
-   OutputTree->Branch("RBXEnergy15", RBXEnergy15, "RBXEnergy15[72]/D");
-   OutputTree->Branch("RBXHitCount", RBXHitCount, "RBXHitCount[72]/I");
-   OutputTree->Branch("RBXR45", RBXR45, "RBXR45[72]/D");
-   OutputTree->Branch("RBXCharge", RBXCharge, "RBXCharge[72][10]/D");
+   t->Branch("minhpdemf",&minhpdemf,"minhpdemf/F");
+   t->Branch("minrbxemf",&minrbxemf,"minrbxemf/F");
+   t->Branch("nproblemRBXs",&nproblemRBXs,"nproblemRBXs/I");
+   t->Branch("nisolnoise",&nisolnoise,"nisolnoise/I");
+   t->Branch("isolnoisee",&isolnoisee,"isolnoisee/F");
+
+   t->Branch("nflatnoise",&nflatnoise,"nflatnoise/I");
+   t->Branch("flatnoisee",&flatnoisee,"flatnoisee/F");
+   t->Branch("flatnoiseet",&flatnoiseet,"flatnoiseet/F");
+   t->Branch("nspikenoise",&nspikenoise,"nspikenoise/I");
+   t->Branch("spikenoisee",&spikenoisee,"spikenoisee/F");
+   t->Branch("spikenoiseet",&spikenoiseet,"spikenoiseet/F");
+   t->Branch("ntrianglenoise",&ntrianglenoise,"ntrianglenoise/I");
+   t->Branch("trianglenoisee",&trianglenoisee,"trianglenoisee/F");
+   t->Branch("trianglenoiseet",&trianglenoiseet,"trianglenoiseet/F");
+   t->Branch("nts4ts5noise",&nts4ts5noise,"nts4ts5noise/I");
+   t->Branch("ts4ts5noisee",&ts4ts5noisee,"ts4ts5noisee/F");
+   t->Branch("ts4ts5noiseet",&ts4ts5noiseet,"ts4ts5noiseet/F");
+
+   t->Branch("hasBadRBXTS4TS5",&hasBadRBXTS4TS5,"hasBadRBXTS4TS5/O");
+
+
 
 }
-//---------------------------------------------------------------------------
-void HiHcalAnalyzer::endJob() 
+
+// ------------ method called once each job just after ending the event loop  ------------
+void 
+HiHcalAnalyzer::endJob() 
 {
 }
-//---------------------------------------------------------------------------
-void HiHcalAnalyzer::beginRun(edm::Run const&, edm::EventSetup const&)
+
+// ------------ method called when starting to processes a run  ------------
+void 
+HiHcalAnalyzer::beginRun(edm::Run const&, edm::EventSetup const&)
 {
 }
-//---------------------------------------------------------------------------
-void HiHcalAnalyzer::endRun(edm::Run const&, edm::EventSetup const&)
+
+// ------------ method called when ending the processing of a run  ------------
+void 
+HiHcalAnalyzer::endRun(edm::Run const&, edm::EventSetup const&)
 {
 }
-//---------------------------------------------------------------------------
-void HiHcalAnalyzer::beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&)
+
+// ------------ method called when starting to processes a luminosity block  ------------
+void 
+HiHcalAnalyzer::beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&)
 {
 }
-//---------------------------------------------------------------------------
-void HiHcalAnalyzer::endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&)
+
+// ------------ method called when ending the processing of a luminosity block  ------------
+void 
+HiHcalAnalyzer::endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&)
 {
 }
-//---------------------------------------------------------------------------
-void HiHcalAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions)
-{
-  // The following says we do not know what parameters are allowed so do no validation
+
+// ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
+void
+HiHcalAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+  //The following says we do not know what parameters are allowed so do no validation
   // Please change this to state exactly what you do use, even if it is no parameters
   edm::ParameterSetDescription desc;
   desc.setUnknown();
   descriptions.addDefault(desc);
 }
-//---------------------------------------------------------------------------
-void HiHcalAnalyzer::CleanUp()
-{
-   RunNumber = -1;
-   EventNumber = -1;
-   LumiSection = -1;
-   Bunch = -1;
-   Orbit = -1;
-   Time = -1;
 
-   FilterStatus = -1;
-   MaxZeros = -1;
-   MaxHPDHits = -1;
-   MaxHPDNoOtherHits = -1;
-   MaxRBXHits = -1;
-   IsolatedCount = -1;
-   FlatNoiseCount = -1;
-   SpikeNoiseCount = -1;
-   IsolatedSumE = -1;
-   FlatNoiseSumE = -1;
-   SpikeNoiseSumE = -1;
-   IsolatedSumET = -1;
-   FlatNoiseSumET = -1;
-   SpikeNoiseSumET = -1;
-   HasBadTS4TS5 = false;
-   TotalCalibCharge = -1;
-   MinE2E10 = -1;
-   MaxE2E10 = -1;
-
-   for(int iID = 0; iID < 72; iID++)
-   {
-      RBXEnergy[iID] = -1;
-      RBXEnergy15[iID] = -1;
-      RBXHitCount[iID] = -1;
-      RBXR45[iID] = 9999;
-      for(int iTS = 0; iTS < 10; iTS++)
-         RBXCharge[iID][iTS] = -1;
-   }
-}
-//---------------------------------------------------------------------------
 //define this as a plug-in
 DEFINE_FWK_MODULE(HiHcalAnalyzer);

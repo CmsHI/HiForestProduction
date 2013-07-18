@@ -46,7 +46,8 @@ icPu5corr    = patJetCorrFactors.clone(src      = cms.InputTag("iterativeConePu5
                                        payload  = cms.string('IC5Calo_2760GeV'))
 
 akPu5PFcorr = icPu5corr.clone(
-  src = cms.InputTag("akPu5PFJets")
+  src = cms.InputTag("akPu5PFJets"),
+  payload = cms.string('AK5PF_hiIterativeTracks')
   )
 akPu5PFpatJets = patJets.clone(
   jetSource = cms.InputTag("akPu5PFJets"),
@@ -55,8 +56,43 @@ akPu5PFpatJets = patJets.clone(
   jetCorrFactorsSource = cms.VInputTag(cms.InputTag("akPu5PFcorr"))
   )
 
-akPu3PFcorr = icPu5corr.clone()
-akPu3corr = icPu5corr.clone()
+akPu3PFcorr = icPu5corr.clone(
+  src = cms.InputTag("akPu3PFJets"),
+  payload = cms.string('AK3PF_hiIterativeTracks')
+  )
+
+#akPu3PFpatJets = patJets.clone(
+#  jetSource = cms.InputTag("akPu3PFJets"),
+#  genJetMatch = cms.InputTag("akPu3PFmatch"),
+#  genPartonMatch = cms.InputTag("akPu3PFparton"),
+#  jetCorrFactorsSource = cms.VInputTag(cms.InputTag("akPu3PFcorr"))
+#  )
+
+akPu5corr = icPu5corr.clone(
+    src = cms.InputTag("akPu5CaloJets"),
+    payload = cms.string('AK5Calo')
+    )
+
+akPu5patJets = patJets.clone(
+    jetSource = cms.InputTag("akPu5CaloJets"),
+    genJetMatch = cms.InputTag("akPu5match"),
+    genPartonMatch = cms.InputTag("akPu5parton"),
+    jetCorrFactorsSource = cms.VInputTag(cms.InputTag("akPu5corr"))
+    )
+
+akPu3corr = icPu5corr.clone(
+    src = cms.InputTag("akPu3CaloJets"),
+    payload = cms.string('AK5Calo')
+    )
+
+akPu3patJets = patJets.clone(
+    jetSource = cms.InputTag("akPu3CaloJets"),
+    genJetMatch = cms.InputTag("akPu3match"),
+    genPartonMatch = cms.InputTag("akPu3parton"),
+    jetCorrFactorsSource = cms.VInputTag(cms.InputTag("akPu3corr"))
+    )
+
+
 
 # mc matching
 patJetPartonMatch.matched = cms.InputTag("hiPartons")
@@ -315,6 +351,10 @@ akPu3PFPatJetFlavourAssociation      = patJetFlavourAssociation.clone(srcByRefer
 akPu3PFPatJetFlavourId               = cms.Sequence(akPu3PFPatJetPartonAssociation*akPu3PFPatJetFlavourAssociation)
 #
 #-------
+akPu3PFcorr = patJetCorrFactors.clone(src     = cms.InputTag("akPu3PFJets"),
+                                      levels  = cms.vstring('L2Relative','L3Absolute'),
+                                      payload = cms.string('AK3PFTowers_hiGoodTightTracks')
+                                                      )
 akPu3PFclean   = heavyIonCleanedGenJets.clone(src = cms.InputTag('ak3HiGenJets'))
 akPu3PFmatch   = patJetGenJetMatch.clone(src      = cms.InputTag("akPu3PFJets"),
                                                          matched  = cms.InputTag("akPu3PFclean"))
@@ -356,12 +396,12 @@ akPu3PFpatJets = patJets.clone(jetSource            = cms.InputTag("akPu3PFJets"
 #ak5PFcorr = akPu3PFcorr.clone(src = cms.InputTag("ak5PFJets"),payload = cms.string('AK5PF_hiIterativeTracks'))
 #ak6PFcorr = akPu3PFcorr.clone(src = cms.InputTag("ak6PFJets"),payload = cms.string('AK6PF_hiIterativeTracks'))
 
-akPu1PFcorr = akPu3PFcorr.clone(src = cms.InputTag("akPu1PFJets"),payload = cms.string('AKPu1PF_generalTracks'))
-akPu2PFcorr = akPu3PFcorr.clone(src = cms.InputTag("akPu2PFJets"),payload = cms.string('AKPu2PF_generalTracks'))
-akPu3PFcorr = akPu3PFcorr.clone(src = cms.InputTag("akPu3PFJets"),payload = cms.string('AKPu3PF_generalTracks'))
-akPu4PFcorr = akPu3PFcorr.clone(src = cms.InputTag("akPu4PFJets"),payload = cms.string('AKPu4PF_generalTracks'))
-akPu5PFcorr = akPu3PFcorr.clone(src = cms.InputTag("akPu5PFJets"),payload = cms.string('AKPu5PF_generalTracks'))
-akPu6PFcorr = akPu3PFcorr.clone(src = cms.InputTag("akPu6PFJets"),payload = cms.string('AKPu6PF_generalTracks'))
+akPu1PFcorr = akPu3PFcorr.clone(src = cms.InputTag("akPu1PFJets"),payload = cms.string('AK1PF_generalTracks'))
+akPu2PFcorr = akPu3PFcorr.clone(src = cms.InputTag("akPu2PFJets"),payload = cms.string('AK2PF_generalTracks'))
+akPu3PFcorr = akPu3PFcorr.clone(src = cms.InputTag("akPu3PFJets"),payload = cms.string('AK3PF_generalTracks'))
+akPu4PFcorr = akPu3PFcorr.clone(src = cms.InputTag("akPu4PFJets"),payload = cms.string('AK4PF_generalTracks'))
+akPu5PFcorr = akPu3PFcorr.clone(src = cms.InputTag("akPu5PFJets"),payload = cms.string('AK5PF_generalTracks'))
+akPu6PFcorr = akPu3PFcorr.clone(src = cms.InputTag("akPu6PFJets"),payload = cms.string('AK6PF_generalTracks'))
 
 ak1PFcorr = akPu3PFcorr.clone(src = cms.InputTag("ak1PFJets"),payload = cms.string('AK1PF_generalTracks'))
 ak2PFcorr = akPu3PFcorr.clone(src = cms.InputTag("ak2PFJets"),payload = cms.string('AK2PF_generalTracks'))
@@ -370,13 +410,13 @@ ak4PFcorr = akPu3PFcorr.clone(src = cms.InputTag("ak4PFJets"),payload = cms.stri
 ak5PFcorr = akPu3PFcorr.clone(src = cms.InputTag("ak5PFJets"),payload = cms.string('AK5PF_generalTracks'))
 ak6PFcorr = akPu3PFcorr.clone(src = cms.InputTag("ak6PFJets"),payload = cms.string('AK6PF_generalTracks'))
 
-akPu1Calocorr = akPu3PFcorr.clone(src = cms.InputTag("akPu1CaloJets"),payload = cms.string('AKPu1Calo_HI'))
-akPu2Calocorr = akPu3PFcorr.clone(src = cms.InputTag("akPu2CaloJets"),payload = cms.string('AKPu2Calo_HI'))
-akPu3Calocorr = akPu3PFcorr.clone(src = cms.InputTag("akPu3CaloJets"),payload = cms.string('AKPu3Calo_HI'))
-akPu4Calocorr = akPu3PFcorr.clone(src = cms.InputTag("akPu4CaloJets"),payload = cms.string('AKPu4Calo_HI'))
-akPu5Calocorr = akPu3PFcorr.clone(src = cms.InputTag("akPu5CaloJets"),payload = cms.string('AKPu5Calo_HI'))
+akPu1Calocorr = akPu3PFcorr.clone(src = cms.InputTag("akPu1CaloJets"),payload = cms.string('AK1Calo_HI'))
+akPu2Calocorr = akPu3PFcorr.clone(src = cms.InputTag("akPu2CaloJets"),payload = cms.string('AK2Calo_HI'))
+akPu3Calocorr = akPu3PFcorr.clone(src = cms.InputTag("akPu3CaloJets"),payload = cms.string('AK3Calo_HI'))
+akPu4Calocorr = akPu3PFcorr.clone(src = cms.InputTag("akPu4CaloJets"),payload = cms.string('AK4Calo_HI'))
+akPu5Calocorr = akPu3PFcorr.clone(src = cms.InputTag("akPu5CaloJets"),payload = cms.string('AK5Calo_HI'))
 # We don't have corrections for ak6calo. This algorithm will be kept for debugging
-akPu6Calocorr = akPu3PFcorr.clone(src = cms.InputTag("akPu6CaloJets"),payload = cms.string('AKPu5Calo_HI'))
+akPu6Calocorr = akPu3PFcorr.clone(src = cms.InputTag("akPu6CaloJets"),payload = cms.string('AK5Calo_HI'))
 
 ak1Calocorr = akPu3PFcorr.clone(src = cms.InputTag("ak1CaloJets"),payload = cms.string('AK1Calo_HI'))
 ak2Calocorr = akPu3PFcorr.clone(src = cms.InputTag("ak2CaloJets"),payload = cms.string('AK2Calo_HI'))

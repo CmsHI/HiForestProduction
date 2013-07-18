@@ -19,10 +19,7 @@ particleFlowTmp.postMuonCleaning = False
 pfTrack.UseQuality = True
 pfTrack.GsfTracksInEvents = cms.bool(False)
 HiParticleFlowReco.remove(electronsWithPresel)
-#HiParticleFlowReco.remove(electronsCiCLoose)
-
-HiParticleFlowReco.remove(mvaElectrons)
-
+HiParticleFlowReco.remove(electronsCiCLoose)
 particleFlowTmp.usePFElectrons = cms.bool(False)
 particleFlowTmp.useEGammaElectrons = cms.bool(False)
 

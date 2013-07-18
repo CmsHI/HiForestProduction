@@ -48,7 +48,7 @@ namespace cms
 	pID=reinterpret_cast<const SiStripRecHit1D *>(hit)->cluster().id();	
       } else if (type == typeid(SiStripMatchedRecHit2D)) {
 	const SiStripMatchedRecHit2D *mhit = reinterpret_cast<const SiStripMatchedRecHit2D *>(hit);
-	pID=mhit->monoClusterRef().id();
+	pID=mhit->monoHit()->cluster().id();
       } else if (type == typeid(ProjectedSiStripRecHit2D)) {
 	const ProjectedSiStripRecHit2D *phit = reinterpret_cast<const ProjectedSiStripRecHit2D *>(hit);
 	pID=(&phit->originalHit())->cluster().id();

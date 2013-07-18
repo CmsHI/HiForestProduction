@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 
 from MitHig.PixelTrackletAnalyzer.trackAnalyzer_cff import *
 
-anaTrack.trackPtMin = 0.
+anaTrack.trackPtMin = 0.5
 anaTrack.useQuality = False
 anaTrack.doPFMatching = True
 anaTrack.pfCandSrc = cms.InputTag("particleFlowTmp")
