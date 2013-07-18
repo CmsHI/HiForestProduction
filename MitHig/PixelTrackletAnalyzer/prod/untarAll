@@ -1,0 +1,24 @@
+#!/bin/sh
+
+indir=`pwd`
+level=0
+
+if [ $level = 0 ]; then
+    for ball in `ls | grep tgz`
+      do
+      tar xvfz $ball
+    done
+else
+    for dir in `ls`
+      do
+      cd $dir
+      for ball in `ls *.tgz`
+	do
+	tar xvfz $ball
+      done
+      cd $indir
+    done
+fi
+
+
+

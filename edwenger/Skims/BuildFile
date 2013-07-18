@@ -1,0 +1,11 @@
+# -*- Makefile -*-
+# $Id: 
+
+<use name=root>
+<use name=FWCore/Framework>
+<use name=FWCore/ParameterSet>
+<use name=FWCore/PluginManager>
+<flags EDM_PLUGIN=1>
+<export>
+  <lib name=edwengerSkims>
+</export>

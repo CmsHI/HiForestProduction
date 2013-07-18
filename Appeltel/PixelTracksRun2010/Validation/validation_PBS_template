@@ -1,0 +1,21 @@
+#!/bin/bash
+#PBS -l nodes=1:x86
+#PBS -l mem=3000mb
+#PBS -l walltime=5:00:00
+#PBS -j oe
+
+cd $PBS_O_WORKDIR
+pwd
+echo $PBS_NODEFILE
+echo $HOSTNAME
+
+source /home/appelte1/cmsset_accre.sh
+eval `scramv1 runtime -sh`
+time cmsRun #_CFGNAME_# \
+     &> validation_eta#_ETA_#_cbin_#_CBIN_#.log
+
+echo "JOB SUCCESS"
+
+exit 0
+
+

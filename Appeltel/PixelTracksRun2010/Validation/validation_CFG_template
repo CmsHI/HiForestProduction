@@ -1,0 +1,302 @@
+import FWCore.ParameterSet.Config as cms
+
+process = cms.Process("PIXELTRACKVALIDATION")
+
+process.load("FWCore.MessageService.MessageLogger_cfi")
+process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
+process.load("Configuration.StandardSequences.Services_cff")
+
+process.load('Configuration.StandardSequences.GeometryDB_cff')
+process.load('Configuration.StandardSequences.MagneticField_38T_cff')
+process.load('Validation.RecoHI.TrackValidationHeavyIons_cff')
+
+process.load("RecoHI.HiCentralityAlgos.CentralityFilter_cfi")
+
+process.centralityFilter.selectedBins = #_CENT_#
+
+
+
+process.GlobalTag.globaltag = 'START39_V4HI::All'
+
+
+from CmsHi.Analysis2010.CommonFunctions_cff import *
+overrideCentrality(process)
+
+
+process.HeavyIonGlobalParameters = cms.PSet(
+    centralityVariable = cms.string("HFhits"),
+    nonDefaultGlauberModel = cms.string("Hydjet_Bass"),
+    centralitySrc = cms.InputTag("hiCentrality")
+    )
+
+
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+
+readFiles = cms.untracked.vstring()
+
+process.source = cms.Source("PoolSource",
+    fileNames = readFiles,
+    duplicateCheckMode = cms.untracked.string('noDuplicateCheck')
+)
+
+
+process.TFileService = cms.Service("TFileService",
+    fileName = cms.string('validation_eta#_ETA_#_centbin#_CBIN_#.root')
+)
+
+process.Timing = cms.Service("Timing")
+
+
+#customize validation for pixel tracks
+process.findableSimTracks.ptMin = 0.2
+process.findableSimTracks.minHit = 3
+process.hiTrackValidator.label = ['hiMergedPtSplit12Tracks']
+process.hiTrackValidator.histoProducerAlgoBlock.minPt = 0.0
+process.hiTrackValidator.histoProducerAlgoBlock.maxPt = 5.0
+process.hiTrackValidator.ptMinTP = 0.2
+process.hiTrackValidator.histoProducerAlgoBlock.nintPt = 100
+process.hiTrackValidator.histoProducerAlgoBlock.useLogPt = False
+process.hiTrackValidator.label_tp_effic = cms.InputTag("mergedtruth","MergedTrackTruth")
+process.hiTrackValidator.label_tp_fake = cms.InputTag("mergedtruth","MergedTrackTruth")
+process.hiTrackValidator.skipHistoFit = False
+process.hiTrackValidator.outputFile = 'validation_eta#_ETA_#_centbin#_CBIN_#.root'
+
+process.hiTrackValidator.UseAssociators = False
+process.hiTrackValidator.associatormap = cms.InputTag("tpRecoAssocMerged12Tracks")
+
+
+# change pseudorapidity range
+process.hiTrackValidator.minRapidityTP = -#_ETA_#
+process.hiTrackValidator.maxRapidityTP = #_ETA_#
+process.hiTrackValidator.maxEta = cms.double(#_ETA_#)
+
+process.validation_step = cms.Path(process.centralityFilter *  process.hiTrackValidator)
+
+process.schedule = cms.Schedule( process.validation_step)
+
+
+readFiles.extend( [
+
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_100.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_101.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_102.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_103.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_104.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_105.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_106.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_107.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_108.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_109.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_10.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_110.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_111.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_112.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_113.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_115.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_116.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_117.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_118.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_119.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_11.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_120.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_121.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_122.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_123.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_124.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_125.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_126.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_127.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_128.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_129.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_12.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_130.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_131.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_132.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_133.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_134.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_135.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_136.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_137.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_138.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_139.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_13.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_140.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_141.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_142.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_143.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_144.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_145.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_146.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_147.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_148.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_149.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_14.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_150.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_151.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_152.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_153.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_154.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_155.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_156.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_157.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_158.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_159.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_15.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_160.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_161.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_162.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_163.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_164.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_165.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_166.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_167.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_168.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_169.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_16.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_170.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_171.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_172.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_173.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_174.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_175.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_176.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_177.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_178.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_179.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_17.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_180.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_181.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_182.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_183.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_184.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_185.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_186.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_187.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_188.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_189.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_18.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_190.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_191.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_192.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_193.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_194.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_195.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_196.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_197.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_198.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_199.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_19.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_1.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_200.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_201.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_202.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_203.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_204.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_205.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_206.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_207.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_208.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_209.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_20.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_210.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_211.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_212.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_213.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_214.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_215.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_216.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_217.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_218.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_219.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_21.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_220.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_221.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_222.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_223.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_224.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_225.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_226.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_227.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_228.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_229.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_22.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_230.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_231.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_232.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_233.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_234.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_235.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_236.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_237.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_238.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_239.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_23.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_240.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_241.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_242.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_243.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_244.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_245.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_246.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_247.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_248.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_249.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_24.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_250.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_251.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_252.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_253.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_254.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_255.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_256.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_257.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_258.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_259.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_25.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_260.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_261.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_262.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_263.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_264.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_265.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_266.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_267.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_268.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_269.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_26.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_270.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_271.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_272.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_273.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_274.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_275.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_276.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_277.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_278.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_279.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_27.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_280.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_281.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_282.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_283.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_284.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_285.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_286.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_287.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_288.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_289.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_28.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_290.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_291.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_292.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_293.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_294.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_295.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_296.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_297.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_298.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_299.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_29.root',
+'file:/scratch/appelte1/pixelMCRECO/recoAssoc_2.root'
+ ] )
+

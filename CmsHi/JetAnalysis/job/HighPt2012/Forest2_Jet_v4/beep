@@ -1,0 +1,8 @@
+sleep 0.5
+printf '\a'
+sleep 0.5
+printf '\a'
+sleep 0.5
+printf '\a'
+sleep 0.5
+printf '\a'

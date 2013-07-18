@@ -1,0 +1,39 @@
+=== Examples ===
+- from dir
+  listDuplicates.sh /pnfs/cmsaf.mit.edu/t2bat/cms/store/user/edwenger/MinimumBias/MB-C10-PR9-TRKANASKIM-v3/ae98f896d123ace1f592d26e790fa90c | sort |uniq
+- from list
+  listDuplicates.sh log/pub_files.txt 1 trkAnaSkimAOD | sort | uniq
+- check files against pub list
+  * for i in `ls *.root | sed 's/trkhists_//'`; do grep -q $i log/pub_aod_list.txt; if [ $? -ne 0 ]; then echo "mv trkhists_$i not_pub"; fi; done
+
+=== Example Cleaning Steps ===
+../../scripts/listDuplicates.sh . | sort | uniq > log/duplicates.txt
+cat log/duplicates.txt | sed 's/^/rm /'
+cat log/duplicates.txt | sed 's/^/rm /' | bash +x
+for i in `find . -size -10 | grep trkhists.*root$`; do ll $i; done
+mkdir bad
+for i in `find . -size -10 | grep trkhists.*root$`; do mv $i bad/; done
+../../scripts/listBadFiles.sh log
+cat log/badFileList.txt
+../../scripts/cleanBadFiles.sh log/badFileList.txt
+../../scripts/checkRootFileList.sh .
+cat log/corruptRootFiles.txt
+mkdir not_pub
+pub_list=../../submit/pub_list/sample.txt
+for i in `ls *.root | sed 's/trkhists//'`; do grep -q $i $pub_list; if [ $? -ne 0 ]; then echo "mv trkhists$i not_pub"; fi; done
+for i in `ls *.root | sed 's/trkhists//'`; do grep -q $i $pub_list; if [ $? -ne 0 ]; then echo "mv trkhists$i not_pub"; fi; done | bash +x
+for i in `ls *.root | sed 's/trkhists//'`; do grep $i $pub_list; done > log/in_pub_aod_list.txt
+
+# finished cleaning now merge
+mkdir all
+hadd -T all/trkhists_histOnly_all.root trkhists_*.root >& log/hadd.txt &
+
+=== Examples of Checking Logs ===
+grep '^TrigReport.*eventFilter_step$' log/trkhists_trkAnaSkimAOD_*.txt | awk '{print $4, $5, $4/$5}' | awk '{print $1}' | addfloats.py | grep sum
+grep '^TrigReport.*ana_step$' log/trkhists_trkAnaSkimAOD_*.txt | awk '{print $4, $5, $4/$5}' | awk '{print $1}' | addfloats.py | grep sum
+
+
+=== Useful Checks on scripts ===
+- mergeJob.sh
+  * turn off "eval" 
+  * ./mergeJob.sh /net/hibat0003/d00/scratch/frankma/data/MinimumBias/MB-C10-PR9-MBskim-v0_proc0628_trkAnaNoFilter_v2 trkhists | tr " " "\n" | grep trkAnaSkimAOD

@@ -1,0 +1,23 @@
+<use name=root>
+<use name=FWCore/Framework>
+<use name=FWCore/PluginManager>
+<use name=FWCore/ParameterSet>
+<use name=DataFormats/VertexReco>
+<use name=CommonTools/UtilAlgos>
+<use name=DataFormats/JetReco>
+<use name=RecoVertex/PrimaryVertexProducer>
+<use name=SimTracker/Records>
+<use name=SimTracker/TrackAssociation>
+<use name=DataFormats/HeavyIonEvent>
+<flags EDM_PLUGIN=1>
+<export>
+   <lib name=PbPbTrackingToolsHiTrackValidator>
+   <use name=root>
+   <use name=FWCore/Framework>
+   <use name=FWCore/PluginManager>
+   <use name=FWCore/ParameterSet>
+   <use name=DataFormats/VertexReco>
+   <use name=CommonTools/UtilAlgos>
+   <use name=SimTracker/Records>
+   <use name=SimTracker/TrackAssociation>
+</export>

@@ -1,0 +1,6 @@
+### Instructions for job submission ###
+0. . setCrab_caf.sh
+1. Edit multicrab.cfg and python cfgs
+2. multicrab -create
+3. multicrab -submit
+4. cvs ci *.cfg *.py <=== this is important to keep a log of the scripts we used for each job

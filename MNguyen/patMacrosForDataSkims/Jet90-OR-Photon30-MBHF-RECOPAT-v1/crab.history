@@ -1,0 +1,5 @@
+101112_173255: /afs/cern.ch/cms/ccs/wm/scripts/Crab/CRAB_2_7_5_patch1/python/crab.py -create
+101112_173655: /afs/cern.ch/cms/ccs/wm/scripts/Crab/CRAB_2_7_5_patch1/python/crab.py -submit
+101112_175028: /afs/cern.ch/cms/ccs/wm/scripts/Crab/CRAB_2_7_5_patch1/python/crab.py -status
+101112_175420: /afs/cern.ch/cms/ccs/wm/scripts/Crab/CRAB_2_7_5_patch1/python/crab.py -status
+101112_180832: /afs/cern.ch/cms/ccs/wm/scripts/Crab/CRAB_2_7_5_patch1/python/crab.py -status

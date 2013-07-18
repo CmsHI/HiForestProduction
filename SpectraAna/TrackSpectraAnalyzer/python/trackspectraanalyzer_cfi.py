@@ -1,0 +1,23 @@
+import FWCore.ParameterSet.Config as cms
+
+trackAna = cms.EDAnalyzer('TrackSpectraAnalyzer',
+        src = cms.untracked.InputTag("selectTracks"),
+        vsrc = cms.untracked.InputTag("offlinePrimaryVertices"),
+        jsrc = cms.untracked.InputTag("iterativeCone5CaloJets"),
+        isGEN = cms.untracked.bool(True),
+        doJet = cms.untracked.bool(True),
+        wantNtuple = cms.untracked.bool(True),
+        etaCut = cms.untracked.double(2.5),
+        etaBinW = cms.untracked.double(0.1),
+        etaMax = cms.untracked.double(2.5),
+        ptBinW = cms.untracked.double(0.5),
+        ptMin = cms.untracked.double(0.0),
+        ptMax = cms.untracked.double(200.0),
+        jetaBinW = cms.untracked.double(0.1),
+        jetaMax = cms.untracked.double(2.5),
+        jetBinW = cms.untracked.double(0.5),
+        jetMin = cms.untracked.double(0.0),
+        jetMax = cms.untracked.double(400.0),
+        nVtxTrkCut = cms.untracked.int32(3),
+        outputFile = cms.string("trackAnaDATA.root"),
+)

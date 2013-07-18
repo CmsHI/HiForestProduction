@@ -1,0 +1,4 @@
+=== Examples ===
+root -l anaHltJetEff_simple.C+\(\"Data\",\"/net/hibat0003/d00/scratch/frankma/data/MinimumBias/MB-C10-PR9-MBskim-v0_proc0628_trkAnaNoFilter_v2/trkhists_trkAnaSkimAOD_*.root\",\"plots/MB-C10-PR9-MBskim-v0_p0628_v2_a2\"\)
+root -l anaTrigSpectra_simple.C+\(\"Data\",\"plots/MB-C10-PR9-MBskim-v0_p0628_v2_a2/anahlt.root\",\"/net/hibat0003/d00/scratch/frankma/data/MinimumBias/MB-C10-PR9-MBskim-v0_proc0628_trkAnaNoFilter_v2/trkhists_trkAnaSkimAOD_*.root\",\"plots/MB-C10-PR9-MBskim-v0_p0628_v2_a2\"\)
+root -l finalTrigSpectra.C+\(\"Data\",\"plots/MB-C10-PR9-MBskim-v0_p0628_v2_a2/anaspec.root\",\"plots/MB-C10-PR9-MBskim-v0_p0628_v2_a2\"\)
