@@ -1,0 +1,12 @@
+<use   name="boost"/>
+<use   name="root"/>
+<use   name="clhep"/>
+<use   name="FWCore/Framework"/>
+<use   name="FWCore/ParameterSet"/>
+<use   name="FWCore/PluginManager"/>
+<use   name="FWCore/Utilities"/>
+<use   name="DataFormats/TrackReco"/>
+<use   name="DataFormats/VertexReco"/>
+<export>
+  <lib   name="1"/>
+</export>

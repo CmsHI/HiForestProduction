@@ -1,0 +1,10 @@
+<export>
+</export>
+<library   name="edwengerHiTrkEffAnalyzer_plugins" file="*.cc">
+  <use   name="FWCore/Framework"/>
+  <use   name="FWCore/ParameterSet"/>
+  <use   name="DataFormats/RecoCandidate"/>
+  <use   name="SimDataFormats/TrackingAnalysis"/>
+  <use   name="CommonTools/Utils"/>
+  <use   name="CommonTools/RecoAlgos"/>
+</library>

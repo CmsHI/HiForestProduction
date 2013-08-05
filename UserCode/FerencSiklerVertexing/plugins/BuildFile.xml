@@ -1,0 +1,4 @@
+<use   name="UserCode/FerencSiklerVertexing"/>
+<library   file="*.cc" name="UserCodeFerencSiklerVertexingPlugins">
+  <flags   EDM_PLUGIN="1"/>
+</library>
