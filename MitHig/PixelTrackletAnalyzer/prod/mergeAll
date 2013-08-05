@@ -1,9 +1,0 @@
-#!/bin/sh
-
-dirs=proc
-for i in `seq 0 9`
-do
-hadd hist${i}.root ${dirs}*/*${i}.hist.root
-done
-hadd merged.root hist*.root
-
