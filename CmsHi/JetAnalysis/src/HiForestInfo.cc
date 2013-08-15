@@ -5,10 +5,10 @@
 // 
 /**\class HiForestInfo HiForestInfo.cc CmsHi/HiForestInfo/src/HiForestInfo.cc
 
- Description: [one line class summary]
+   Description: [one line class summary]
 
- Implementation:
-     [Notes on implementation]
+   Implementation:
+   [Notes on implementation]
 */
 //
 // Original Author:  Yetkin Yilmaz
@@ -32,34 +32,38 @@
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "TH1.h"
+#include "TTree.h"
 
 //
 // class declaration
 //
 
 class HiForestInfo : public edm::EDAnalyzer {
-   public:
-      explicit HiForestInfo(const edm::ParameterSet&);
-      ~HiForestInfo();
+public:
+  explicit HiForestInfo(const edm::ParameterSet&);
+  ~HiForestInfo();
 
-      static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
 
-   private:
-      virtual void beginJob() ;
-      virtual void analyze(const edm::Event&, const edm::EventSetup&);
-      virtual void endJob() ;
+private:
+  virtual void beginJob() ;
+  virtual void analyze(const edm::Event&, const edm::EventSetup&);
+  virtual void endJob() ;
 
-      virtual void beginRun(edm::Run const&, edm::EventSetup const&);
-      virtual void endRun(edm::Run const&, edm::EventSetup const&);
-      virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
-      virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
+  virtual void beginRun(edm::Run const&, edm::EventSetup const&);
+  virtual void endRun(edm::Run const&, edm::EventSetup const&);
+  virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
+  virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
 
-      // ----------member data ---------------------------
+  // ----------member data ---------------------------
 
-   edm::Service<TFileService> fs;
+  edm::Service<TFileService> fs;
 
-   std::vector<std::string> inputLines_;
+  std::vector<std::string> inputLines_;
+
+  TTree* HiForestVersionTree;
+  std::string HiForestVersion_;
 };
 
 //
@@ -74,19 +78,17 @@ class HiForestInfo : public edm::EDAnalyzer {
 // constructors and destructor
 //
 HiForestInfo::HiForestInfo(const edm::ParameterSet& iConfig)
-
 {
-
-   inputLines_ = iConfig.getParameter<std::vector<std::string> >("inputLines");
-
+  inputLines_ = iConfig.getParameter<std::vector<std::string> >("inputLines");
+  HiForestVersion_ = iConfig.getUntrackedParameter<std::string>("HiForestVersion",std::string("xxUNTAGGEDxx"));
 }
 
 
 HiForestInfo::~HiForestInfo()
 {
  
-   // do anything here that needs to be done at desctruction time
-   // (e.g. close files, deallocate resources etc.)
+  // do anything here that needs to be done at desctruction time
+  // (e.g. close files, deallocate resources etc.)
 
 }
 
@@ -99,7 +101,7 @@ HiForestInfo::~HiForestInfo()
 void
 HiForestInfo::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-   using namespace edm;
+  using namespace edm;
 
 }
 
@@ -108,9 +110,14 @@ HiForestInfo::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 void 
 HiForestInfo::beginJob()
 {
-   for(unsigned i = 0; i < inputLines_.size(); ++i){
-      fs->make<TH1D>(Form("h%d",i),inputLines_[i].data(),1,0,1);
-   }
+  for(unsigned i = 0; i < inputLines_.size(); ++i){
+    fs->make<TH1D>(Form("h%d",i),inputLines_[i].data(),1,0,1);
+  }
+
+  //HiForestVersion = "xxUNTAGGEDxx";
+  HiForestVersionTree = fs->make<TTree>("HiForestVersion",HiForestVersion_.c_str());
+  // HiForestVersionTree->Branch("HiForestVersion",&HiForestVersion,"HiForestVersion/C");
+  // HiForestVersionTree->Fill();
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
