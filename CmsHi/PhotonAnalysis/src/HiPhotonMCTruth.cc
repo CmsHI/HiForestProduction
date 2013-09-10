@@ -9,7 +9,7 @@
 #include "DataFormats/Candidate/interface/Candidate.h"
 
 
-#include <vector.h>
+#include <vector>
 
 using namespace edm;
 using namespace reco;

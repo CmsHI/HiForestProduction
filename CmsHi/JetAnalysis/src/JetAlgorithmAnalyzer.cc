@@ -486,6 +486,7 @@ void JetAlgorithmAnalyzer::produce(edm::Event& iEvent,const edm::EventSetup& iSe
    // Subtract pedestal. 
 
    if ( doPUOffsetCorr_ ) {
+      subtractor_->setDefinition(fjJetDefinition_);
       subtractor_->reset(inputs_,fjInputs_,fjJets_);
       subtractor_->calculatePedestal(fjInputs_); 
 
@@ -507,9 +508,9 @@ void JetAlgorithmAnalyzer::produce(edm::Event& iEvent,const edm::EventSetup& iSe
    fillBkgNtuple(subtractor_.get(),3);
    fillJetNtuple(fjJets_,3);
 
-   if ( doPUOffsetCorr_ ) {
-      subtractor_->setAlgorithm(fjClusterSeq_);
-   }
+///   if ( doPUOffsetCorr_ ) {
+///      subtractor_->setAlgorithm(fjClusterSeq_);
+///   }
 
    LogDebug("VirtualJetProducer") << "Ran algorithm\n";
 
@@ -720,17 +721,71 @@ void JetAlgorithmAnalyzer::writeBkgJets( edm::Event & iEvent, edm::EventSetup co
    if(backToBack_){
       int ir = 0;
       double phiRel = reco::deltaPhi(phiRandom[ir],phi0_);
-      float entry0[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
+      ///float entry0[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
+      Float_t entry0[100];
+      entry0[0]=etaRandom[ir];
+      entry0[1]=phiRandom[ir];
+      entry0[2]=phiRel;
+      entry0[3]=et[ir];
+      entry0[4]=had[ir];
+      entry0[5]=em[ir];
+      entry0[6]=pileUp[ir];
+      entry0[7]=mean[ir];
+      entry0[8]=rms[ir];
+      entry0[9]=bin_;
+      entry0[10]=hf_;
+      entry0[11]=sumET_;
+      entry0[12]=iev_;
+      entry0[13]=dr[ir];
+      entry0[14]=rawJetPt[ir];
+      entry0[15]=evtJetPt;
+      //Float_t entry0[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
       ntRandom0->Fill(entry0);
       ir = 1;
       phiRel = reco::deltaPhi(phiRandom[ir],phi0_);
-      float entry1[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
+      ///float entry1[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
+      Float_t entry1[100];
+      entry1[0]=etaRandom[ir];
+      entry1[1]=phiRandom[ir];
+      entry1[2]=phiRel;
+      entry1[3]=et[ir];
+      entry1[4]=had[ir];
+      entry1[5]=em[ir];
+      entry1[6]=pileUp[ir];
+      entry1[7]=mean[ir];
+      entry1[8]=rms[ir];
+      entry1[9]=bin_;
+      entry1[10]=hf_;
+      entry1[11]=sumET_;
+      entry1[12]=iev_;
+      entry1[13]=dr[ir];
+      entry1[14]=rawJetPt[ir];
+      entry1[15]=evtJetPt;
+      //Float_t entry1[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
       ntRandom1->Fill(entry1);
    }
    
    for(int ir = 0; ir < nFill_; ++ir){
       double phiRel = reco::deltaPhi(phiRandom[ir],phi0_);
-      float entry[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
+      //float entry[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
+      Float_t entry[100];
+      entry[0]=etaRandom[ir];      
+      entry[1]=phiRandom[ir];
+      entry[2]=phiRel;
+      entry[3]=et[ir];
+      entry[4]=had[ir];
+      entry[5]=em[ir];
+      entry[6]=pileUp[ir];
+      entry[7]=mean[ir];
+      entry[8]=rms[ir];
+      entry[9]=bin_;
+      entry[10]=hf_;
+      entry[11]=sumET_;
+      entry[12]=iev_;
+      entry[13]=dr[ir];
+      entry[14]=rawJetPt[ir];
+      entry[15]=evtJetPt;
+      //Float_t entry[100] = {etaRandom[ir],phiRandom[ir],phiRel,et[ir],had[ir],em[ir],pileUp[ir],mean[ir],rms[ir],bin_,hf_,sumET_,iev_,dr[ir],rawJetPt[ir],evtJetPt};
       if(!backToBack_)ntRandom->Fill(entry);
       if(et[ir] < 0){
 	//	 cout<<"Flipping vector"<<endl;
