@@ -1,0 +1,162 @@
+? HLTrigger/HLTanalyzers/python/__init__.py
+? HeavyIonsAnalysis/Configuration/python/__init__.py
+? RecoHI/Configuration/python/__init__.py
+? RecoHI/HiCentralityAlgos/python/__init__.py
+? RecoHI/HiEgammaAlgos/python/__init__.py
+? RecoHI/HiJetAlgos/python/__init__.py
+? RecoHI/HiMuonAlgos/python/__init__.py
+? RecoHI/HiTracking/python/__init__.py
+Index: RecoHI/Configuration/python/Reconstruction_hiPF_cff.py
+===================================================================
+RCS file: /local/reps/CMSSW/CMSSW/RecoHI/Configuration/python/Reconstruction_hiPF_cff.py,v
+retrieving revision 1.5
+diff -u -r1.5 Reconstruction_hiPF_cff.py
+--- RecoHI/Configuration/python/Reconstruction_hiPF_cff.py	15 Oct 2011 14:24:24 -0000	1.5
++++ RecoHI/Configuration/python/Reconstruction_hiPF_cff.py	10 Sep 2013 18:09:26 -0000
+@@ -2,6 +2,7 @@
+ 
+ # include  particle flow local reconstruction
+ from RecoParticleFlow.PFClusterProducer.particleFlowCluster_cff import *
++particleFlowClusterPS.thresh_Pt_Seed_Endcap = cms.double(99999.)
+ 
+ from RecoParticleFlow.PFTracking.pfTrack_cfi import *
+ pfTrack.UseQuality = cms.bool(True)
+@@ -16,7 +17,9 @@
+ particleFlowBlock.useIterTracking = cms.bool(False)
+ particleFlowBlock.useNuclear = cms.bool(False)
+ particleFlowBlock.useConversions = cms.bool(False)
++particleFlowBlock.RecMuons = 'muons'
+ 
++particleFlowTmp.postMuonCleaning = cms.bool(False)
+ particleFlowTmp.vertexCollection = cms.InputTag("hiSelectedVertex")
+ particleFlowTmp.usePFElectrons = cms.bool(True)
+ particleFlowTmp.muons = cms.InputTag("muons")
+@@ -26,7 +29,7 @@
+ pfTrackElec.applyGsfTrackCleaning = cms.bool(True)
+ pfTrackElec.PrimaryVertexLabel = cms.InputTag("hiSelectedVertex")
+ 
+-electronsCiCLoose.verticesCollection = cms.InputTag("hiSelectedVertex")
++mvaElectrons.vertexTag = cms.InputTag("hiSelectedVertex")
+ 
+ # local reco must run before electrons (RecoHI/HiEgammaAlgos), due to PF integration
+ HiParticleFlowLocalReco = cms.Sequence(particleFlowCluster
+@@ -35,7 +38,7 @@
+                                        )
+ 
+ #PF Reco runs after electrons
+-HiParticleFlowReco = cms.Sequence(pfGsfElectronCiCSelectionSequence
++HiParticleFlowReco = cms.Sequence(pfGsfElectronMVASelectionSequence
+                                   * particleFlowBlock
+                                   * particleFlowTmp
+                                   )
+? DataFormats/HeavyIonEvent
+? L1Trigger/UCT2015
+? L1Trigger/RegionalCaloTrigger/python/__init__.py
+? L1TriggerConfig/L1ScalesProducers/python/__init__.py
+Index: DataFormats/L1CaloTrigger/interface/L1CaloEmCand.h
+===================================================================
+RCS file: /local/reps/CMSSW/CMSSW/DataFormats/L1CaloTrigger/interface/L1CaloEmCand.h,v
+retrieving revision 1.12
+diff -u -r1.12 L1CaloEmCand.h
+--- DataFormats/L1CaloTrigger/interface/L1CaloEmCand.h	7 May 2008 09:53:55 -0000	1.12
++++ DataFormats/L1CaloTrigger/interface/L1CaloEmCand.h	10 Sep 2013 18:09:31 -0000
+@@ -5,6 +5,10 @@
+ 
+ #include "DataFormats/L1CaloTrigger/interface/L1CaloRegionDetId.h"
+ 
++// hack to give RCT EIC candidates more bits of precision
++#define L1EMCAND_PRECISION (9)
++
++
+ /*! \class L1CaloEmCand
+  * \brief Level-1 Region Calorimeter Trigger EM candidate
+  *
+@@ -41,13 +45,13 @@
+   uint16_t raw() const { return m_data; }
+   
+   /// get rank bits
+-  unsigned rank() const { return m_data & 0x3f; }
++  unsigned rank() const { return m_data & ((1 << (L1EMCAND_PRECISION-1)) - 1); }
+ 
+   /// get RCT receiver card
+-  unsigned rctCard() const { return (m_data>>7) & 0x7; }
++  unsigned rctCard() const { return (m_data>>L1EMCAND_PRECISION) & 0x7; }
+ 
+   /// get RCT region ID
+-  unsigned rctRegion() const { return (m_data>>6) & 0x1; }
++  unsigned rctRegion() const { return (m_data>>(L1EMCAND_PRECISION-1)) & 0x1; }
+ 
+   /// get RCT crate
+   unsigned rctCrate() const { return m_rctCrate; }
+Index: DataFormats/L1CaloTrigger/src/L1CaloEmCand.cc
+===================================================================
+RCS file: /local/reps/CMSSW/CMSSW/DataFormats/L1CaloTrigger/src/L1CaloEmCand.cc,v
+retrieving revision 1.11
+diff -u -r1.11 L1CaloEmCand.cc
+--- DataFormats/L1CaloTrigger/src/L1CaloEmCand.cc	5 Nov 2008 20:47:15 -0000	1.11
++++ DataFormats/L1CaloTrigger/src/L1CaloEmCand.cc	10 Sep 2013 18:09:31 -0000
+@@ -49,7 +49,8 @@
+   m_bx(0)
+ 
+ {
+-  m_data = (rank & 0x3f) + ((region & 0x1)<<6) + ((card & 0x7)<<7); 
++  // 0x3f->0xff hack to support 9bit EIC in RCT
++  m_data = (rank & ((1 << (L1EMCAND_PRECISION-1)) - 1)) + ((region & 0x1)<<(L1EMCAND_PRECISION-1)) + ((card & 0x7)<<(L1EMCAND_PRECISION));
+ }
+ 
+ // construct from content (for use in emulator)
+@@ -60,7 +61,8 @@
+   m_index(index),
+   m_bx(bx)
+ {
+-  m_data = (rank & 0x3f) + ((region & 0x1)<<6) + ((card & 0x7)<<7); 
++  // 0x3f->0xff hack to support 9bit EIC in RCT
++  m_data = (rank & ((1 << (L1EMCAND_PRECISION-1)) - 1)) + ((region & 0x1)<<(L1EMCAND_PRECISION-1)) + ((card & 0x7)<<(L1EMCAND_PRECISION));
+ }
+ 
+ // destructor
+Index: L1TriggerConfig/L1ScalesProducers/interface/L1ScalesTrivialProducer.h
+===================================================================
+RCS file: /local/reps/CMSSW/CMSSW/L1TriggerConfig/L1ScalesProducers/interface/L1ScalesTrivialProducer.h,v
+retrieving revision 1.3
+diff -u -r1.3 L1ScalesTrivialProducer.h
+--- L1TriggerConfig/L1ScalesProducers/interface/L1ScalesTrivialProducer.h	25 Mar 2009 23:17:55 -0000	1.3
++++ L1TriggerConfig/L1ScalesProducers/interface/L1ScalesTrivialProducer.h	10 Sep 2013 18:09:31 -0000
+@@ -58,6 +58,8 @@
+   
+   double m_emEtScaleInputLsb;
+   std::vector<double> m_emEtThresholds;
++  unsigned int m_emEtMaxRank;
++  unsigned int m_emEtMaxLinScale;
+ 
+   double m_jetEtScaleInputLsb;
+   std::vector<double> m_jetEtThresholds;
+Index: L1TriggerConfig/L1ScalesProducers/src/L1ScalesTrivialProducer.cc
+===================================================================
+RCS file: /local/reps/CMSSW/CMSSW/L1TriggerConfig/L1ScalesProducers/src/L1ScalesTrivialProducer.cc,v
+retrieving revision 1.6
+diff -u -r1.6 L1ScalesTrivialProducer.cc
+--- L1TriggerConfig/L1ScalesProducers/src/L1ScalesTrivialProducer.cc	25 Mar 2009 23:17:38 -0000	1.6
++++ L1TriggerConfig/L1ScalesProducers/src/L1ScalesTrivialProducer.cc	10 Sep 2013 18:09:31 -0000
+@@ -27,6 +27,12 @@
+   // get numbers from the config file -  all units are GeV
+   m_emEtScaleInputLsb = ps.getParameter<double>("L1CaloEmEtScaleLSB"); 
+   m_emEtThresholds = ps.getParameter< std::vector<double> >("L1CaloEmThresholds");
++  // These are used to enable use of the general ctor of the L1CaloEtScale
++  // http://cmslxr.fnal.gov/lxr/source/CondFormats/L1TObjects/interface/L1CaloEtScale.h#038
++  // This specifies the maximum number of bits used to encode the number
++  m_emEtMaxRank = ps.getParameter<unsigned int>("L1CaloEmMaxRank");
++  // Maximum it can be in the linear scale
++  m_emEtMaxLinScale = ps.getParameter<unsigned int>("L1CaloEmMaxLinScale");
+ 
+   m_jetEtScaleInputLsb = ps.getParameter<double>("L1CaloRegionEtScaleLSB"); 
+   m_jetEtThresholds = ps.getParameter< std::vector<double> >("L1CaloJetThresholds");
+@@ -55,7 +61,7 @@
+ {
+    using namespace edm::es;
+ 
+-   std::auto_ptr<L1CaloEtScale> emScale = std::auto_ptr<L1CaloEtScale>( new L1CaloEtScale(m_emEtScaleInputLsb, m_emEtThresholds) );
++   std::auto_ptr<L1CaloEtScale> emScale = std::auto_ptr<L1CaloEtScale>( new L1CaloEtScale(m_emEtMaxLinScale, m_emEtMaxRank, m_emEtScaleInputLsb, m_emEtThresholds) );
+ 
+    return emScale ;
+ }
