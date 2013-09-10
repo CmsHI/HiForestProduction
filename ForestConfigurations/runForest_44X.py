@@ -1,27 +1,3 @@
-
-import FWCore.ParameterSet.VarParsing as VarParsing
-
-ivars = VarParsing.VarParsing('python')
-
-ivars.register ('randomNumber',
-                1,
-                ivars.multiplicity.singleton,
-                ivars.varType.int,
-                "Random Seed")
-
-ivars.randomNumber = 1
-#ivars.inputFiles = "file:/net/hisrv0001/home/icali/hadoop/Pythia/Z2/ppDijet50/reco_v0/set2_random70000_HydjetDrum_362.root"
-#ivars.inputFiles = "file:/mnt/hadoop/cms/store/user/frankma/HIHighPt/promptskim-hihighpt-hltjet80-pt90-v0//cd475ecb0c871a17cabcfbdd64b9e8dc/reco_1_1_Ls9.root"
-#ivars.inputFiles = "file:/mnt/hadoop/cms/store/user/frankma/HIHighPt/promptskim-hihighpt-hltjet80-pt90-v0//cd475ecb0c871a17cabcfbdd64b9e8dc/reco_2_1_xux.root"
-ivars.inputFiles = "file:/mnt/hadoop/cms/store/user/frankma/HIHighPt/promptskim-hihighpt-hltjet80-pt90-v1/d358bdc6c19493517e3e245a7413a024/reco_100_1_YqR.root"
-
-#ivars.inputFiles = "file:./reco_test16.root"
-ivars.outputFile = './forest_data_00.root'
-ivars.maxEvents = -1
-
-ivars.parseArguments()
-
-
 import FWCore.ParameterSet.Config as cms
 
 process = cms.Process('hiForestAna2011')
@@ -54,7 +30,7 @@ process.HiForest.inputLines = cms.vstring("HiForest V2",
 
 process.source = cms.Source("PoolSource",
  duplicateCheckMode = cms.untracked.string("noDuplicateCheck"),
-    fileNames = cms.untracked.vstring(ivars.inputFiles))
+    fileNames = cms.untracked.vstring("file:/afs/cern.ch/work/v/velicanu/public/forest/step2_RAW2DIGI_L1Reco_RECO_1000_1_D5H.root"))
 
 
 # DATA EMULATION
@@ -70,7 +46,7 @@ process.source.dropDescendantsOfDroppedBranches=cms.untracked.bool(False)
 
 # Number of events we want to process, -1 = all events
 process.maxEvents = cms.untracked.PSet(
-            input = cms.untracked.int32(ivars.maxEvents))
+            input = cms.untracked.int32(10))
 
 
 #####################################################################################
@@ -92,7 +68,8 @@ process.load('RecoLocalTracker.SiPixelRecHits.PixelCPEESProducers_cff')
 #process.load('MitHig.PixelTrackletAnalyzer.pixelHitAnalyzer_cfi')
 
 # Data Global Tag 44x 
-process.GlobalTag.globaltag = 'GR_P_V27A::All'
+#process.GlobalTag.globaltag = 'GR_P_V27A::All'
+process.GlobalTag.globaltag= 'GR_P_V43D::All'
 
 # process.Timing = cms.Service("Timing")
 
@@ -109,7 +86,7 @@ process.HeavyIonGlobalParameters = cms.PSet(
 process.hiCentrality.pixelBarrelOnly = False
 process.load("CmsHi.JetAnalysis.RandomCones_cff")
 
-process.RandomNumberGeneratorService.generator.initialSeed = ivars.randomNumber 
+process.RandomNumberGeneratorService.generator.initialSeed = 1 
 process.RandomNumberGeneratorService.akPu3PFConesAna = process.RandomNumberGeneratorService.generator.clone()
 process.RandomNumberGeneratorService.icPu5CaloConesAna = process.RandomNumberGeneratorService.generator.clone()
 process.RandomNumberGeneratorService.akPu5PFConesAna = process.RandomNumberGeneratorService.generator.clone()
@@ -126,7 +103,7 @@ process.load("RecoEcal.EgammaCoreTools.EcalNextToDeadChannelESProducer_cff")
 #####################################################################################
 
 process.TFileService = cms.Service("TFileService",
-                                  fileName=cms.string(ivars.outputFile))
+                                  fileName=cms.string("PbPb_forest_in_53x.root"))
 
 #####################################################################################
 # Additional Reconstruction and Analysis
